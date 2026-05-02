@@ -1,0 +1,3430 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Question Generation | Sawal{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --bg: #f3f4f8;
+        --white: #ffffff;
+        --brand: #1C4D8D;
+        --brand-light: #e8eef8;
+        --accent: #F06449;
+        --accent-light: #fff2ef;
+        --green: #2ecc8d;
+        --green-light: #e6faf3;
+        --purple: #7c5cbf;
+        --purple-light: #f0ebfc;
+        --text: #1a2340;
+        --text-mid: #4a5568;
+        --text-soft: #94a3b8;
+        --border: #dde3ef;
+        --radius: 14px;
+        --radius-sm: 8px;
+        --shadow: 0 2px 16px rgba(28,77,141,0.08);
+        --shadow-lg: 0 8px 40px rgba(28,77,141,0.14);
+        --transition: all 0.22s cubic-bezier(.4,0,.2,1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'DM Sans', sans-serif;
+        font-size: 14px;
+        min-height: 100vh;
+    }
+
+    .qgx-header {
+        background: linear-gradient(135deg, #1C4D8D 0%, #2563b0 60%, #3b82d4 100%);
+        padding: 28px 32px 22px;
+        border-radius: var(--radius);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: var(--shadow-lg);
+        position: relative;
+        {% comment %} overflow: hidden; {% endcomment %}
+        margin-top: 10px
+    }
+    .qgx-header::before {
+        content: '';
+        position: absolute;
+        right: -60px; top: -60px;
+        width: 260px; height: 260px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.06);
+        pointer-events: none;
+    }
+    .qgx-header::after {
+        content: '';
+        position: absolute;
+        right: 80px; bottom: -90px;
+        width: 180px; height: 180px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.04);
+        pointer-events: none;
+    }
+    .qgx-hdr-left h1 {
+        font-family: 'Fraunces', serif;
+        font-size: 1.65rem;
+        font-weight: 900;
+        color: #fff;
+        line-height: 1.15;
+        letter-spacing: -0.3px;
+    }
+    .qgx-hdr-left p {
+        color: rgba(255,255,255,0.72);
+        font-size: 0.88rem;
+        margin-top: 5px;
+    }
+    .qgx-hdr-badge {
+        background: rgba(255,255,255,0.15);
+        border: 1px solid rgba(255,255,255,0.25);
+        color: #fff;
+        padding: 8px 18px;
+        border-radius: 40px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        backdrop-filter: blur(4px);
+    }
+
+    .qgx-stepbar {
+        background: var(--white);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 18px 28px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+    }
+    .qgx-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        flex: 1;
+        max-width: 180px;
+    }
+    .qgx-step:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        top: 17px;
+        left: calc(50% + 22px);
+        right: calc(-50% + 22px);
+        height: 2px;
+        background: #cbd5e1;
+        transition: background 0.4s;
+        z-index: 0;
+    }
+    .qgx-step.done:not(:last-child)::after { background: var(--green); }
+    .qgx-step.active:not(:last-child)::after { background: var(--brand); }
+
+    .qgx-step-circle {
+        width: 34px; height: 34px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 0.85rem;
+        border: 2.5px solid #cbd5e1;
+        color: #cbd5e1;
+        background: #fff;
+        transition: var(--transition);
+        position: relative; z-index: 1;
+    }
+    .qgx-step.active .qgx-step-circle {
+        border-color: var(--brand);
+        color: #fff;
+        background: var(--brand);
+        box-shadow: 0 0 0 4px rgba(28,77,141,0.14);
+    }
+    .qgx-step.done .qgx-step-circle {
+        border-color: var(--green);
+        background: var(--green);
+        color: #fff;
+    }
+    .qgx-step-label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--text-soft);
+        margin-top: 6px;
+        text-align: center;
+        transition: color 0.3s;
+    }
+    .qgx-step.active .qgx-step-label { color: var(--brand); }
+    .qgx-step.done .qgx-step-label { color: var(--green); }
+
+    .qgx-card {
+        background: var(--white);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 22px 24px;
+        margin-bottom: 16px;
+    }
+    .qgx-card-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: var(--brand);
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1.5px solid var(--border);
+    }
+    .qgx-step-tag {
+        background: var(--brand-light);
+        color: var(--brand);
+        font-size: 0.68rem;
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+    }
+    .qgx-card-title i { color: var(--brand); font-size: 1rem; }
+
+    .qgx-filter-grid {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 12px;
+    }
+    @media (max-width: 1100px) { .qgx-filter-grid { grid-template-columns: repeat(3,1fr); } }
+    @media (max-width: 640px)  { .qgx-filter-grid { grid-template-columns: repeat(2,1fr); } }
+
+    .qgx-filter-item label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-mid);
+        margin-bottom: 5px;
+    }
+    .qgx-req { color: var(--accent); }
+
+    .qgx-filter-item select {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.82rem;
+        color: var(--text);
+        background: #fafbfd;
+        appearance: none;
+        background: #fafbfd url("/static/images/dropdown-arrow.svg") no-repeat right 10px center;
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+    .qgx-filter-item select:focus {
+        outline: none;
+        border-color: var(--brand);
+        box-shadow: 0 0 0 3px rgba(28,77,141,0.1);
+        background-color: #fff;
+    }
+    .qgx-filter-item select:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .qgx-fstatus {
+        font-size: 0.68rem;
+        color: var(--text-soft);
+        margin-top: 4px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .qgx-fstatus.loading { color: var(--brand); }
+    .qgx-fstatus.ready   { color: var(--green); }
+    .qgx-fstatus.error   { color: #ef4444; }
+
+    .qgx-doc-panel {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1.5px solid var(--border);
+    }
+    .qgx-doc-panel-hdr {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .qgx-doc-panel-title {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--text-mid);
+    }
+    .qgx-doc-icon-accent { color: var(--accent); margin-right: 5px; }
+
+    /* ── CHANGE 1: search bar now shows active keyword badge ── */
+    .qgx-searchbar-wrap {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex: 1;
+        max-width: 460px;
+        flex-wrap: wrap;
+    }
+    .qgx-searchbar {
+        position: relative;
+        flex: 1;
+        min-width: 180px;
+    }
+    .qgx-searchbar input {
+        width: 100%;
+        padding: 8px 12px 8px 34px;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.82rem;
+        background: #fafbfd;
+        transition: var(--transition);
+    }
+    .qgx-searchbar input:focus {
+        outline: none;
+        border-color: var(--brand);
+        box-shadow: 0 0 0 3px rgba(28,77,141,0.1);
+    }
+    .qgx-searchbar i {
+        position: absolute;
+        left: 11px; top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-soft);
+        font-size: 0.78rem;
+        pointer-events: none;
+    }
+    /* active keyword indicator */
+    .qgx-keyword-active {
+        display: none;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 20px;
+        background: rgba(240,100,73,0.12);
+        color: var(--accent);
+        border: 1px solid rgba(240,100,73,0.25);
+        white-space: nowrap;
+    }
+    .qgx-keyword-active.visible { display: flex; }
+    .qgx-keyword-active button {
+        background: none; border: none; cursor: pointer;
+        color: var(--accent); font-size: 0.72rem; padding: 0 0 0 3px;
+        font-family: 'DM Sans', sans-serif;
+    }
+
+    .qgx-btn-search {
+        padding: 8px 16px;
+        background: var(--brand);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+    .qgx-btn-search:hover { background: #153f73; transform: translateY(-1px); }
+    .qgx-btn-search:disabled { background: #94a3b8; cursor: not-allowed; transform: none; }
+
+    .qgx-doc-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 10px;
+        max-height: 320px;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+    .qgx-doc-list::-webkit-scrollbar { width: 5px; }
+    .qgx-doc-list::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+    .qgx-doc-list::-webkit-scrollbar-thumb { background: #c7d2e7; border-radius: 10px; }
+
+    .qgx-doc-item {
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 10px 12px;
+        cursor: pointer;
+        transition: var(--transition);
+        background: #fafbfd;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        user-select: none;
+    }
+    .qgx-doc-item:hover {
+        border-color: var(--brand);
+        background: var(--brand-light);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 10px rgba(28,77,141,0.08);
+    }
+    .qgx-doc-item.selected {
+        border-color: var(--brand);
+        background: var(--brand-light);
+        box-shadow: 0 0 0 2px rgba(28,77,141,0.18);
+    }
+    .qgx-doc-item.selected .qgx-doc-chk { background: var(--brand); border-color: var(--brand); }
+    .qgx-doc-item.selected .qgx-doc-chk i { opacity: 1; }
+
+    .qgx-doc-chk {
+        width: 18px; height: 18px; min-width: 18px;
+        border: 2px solid var(--border);
+        border-radius: 4px;
+        display: flex; align-items: center; justify-content: center;
+        margin-top: 1px;
+        transition: var(--transition);
+    }
+    .qgx-doc-chk i { font-size: 0.65rem; color: #fff; opacity: 0; transition: opacity 0.15s; }
+
+    .qgx-doc-info { flex: 1; min-width: 0; }
+    .qgx-doc-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text);
+    /* Force block layout for proper text-overflow behavior */
+    display: block;
+    /* Ensure it takes full width of parent */
+    width: 100%;
+    /* CRITICAL: Allows text to shrink inside flex containers */
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+    .qgx-doc-meta {
+        font-size: 0.68rem;
+        color: var(--text-soft);
+        margin-top: 3px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        flex-wrap: wrap;
+    }
+    .qgx-lvl-tag {
+        font-size: 0.62rem;
+        font-weight: 700;
+        padding: 1px 6px;
+        border-radius: 3px;
+    }
+    .tag-course   { background: rgba(239,68,68,0.1); color: #dc2626; }
+    .tag-leg      { background: rgba(245,158,11,0.1); color: #d97706; }
+    .tag-subject  { background: rgba(124,92,191,0.1); color: #7c5cbf; }
+    .tag-chapter  { background: rgba(28,77,141,0.1);  color: #1C4D8D; }
+    .tag-topic    { background: rgba(6,182,212,0.1);  color: #0891b2; }
+    .tag-section  { background: rgba(46,204,141,0.1); color: #059669; }
+
+    .qgx-doc-empty {
+        grid-column: 1/-1;
+        text-align: center;
+        padding: 32px 20px;
+        color: var(--text-soft);
+        font-size: 0.85rem;
+    }
+    .qgx-doc-empty i { font-size: 2rem; display: block; margin-bottom: 8px; opacity: 0.4; }
+
+    .qgx-sel-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 12px;
+        padding: 8px 14px;
+        background: var(--brand-light);
+        border-radius: var(--radius-sm);
+        border: 1px solid rgba(28,77,141,0.15);
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--brand);
+        transition: opacity 0.3s;
+    }
+    .qgx-sel-bar.hidden { opacity: 0; pointer-events: none; }
+    .qgx-btn-clear-sel {
+        background: none;
+        border: none;
+        color: var(--accent);
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'DM Sans', sans-serif;
+    }
+    .qgx-btn-clear-sel:hover { text-decoration: underline; }
+
+    /* ══════════════════════════════════════════════════════
+       STEP 2 — pages / marks / difficulty
+    ══════════════════════════════════════════════════════ */
+    .qgx-pages-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+    }
+    @media (max-width: 640px) { .qgx-pages-grid { grid-template-columns: 1fr; } }
+
+    .qgx-pages-col-label {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--text-mid);
+        margin-bottom: 10px;
+    }
+    .qgx-pages-col-label i { margin-right: 4px; }
+
+    .qgx-sdoc-list { display: flex; flex-direction: column; gap: 8px; }
+    .qgx-sdoc-row {
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: #fafbfd;
+        padding: 9px 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        transition: var(--transition);
+        user-select: none;
+    }
+    .qgx-sdoc-row:hover { border-color: var(--brand); background: var(--brand-light); box-shadow: 0 2px 8px rgba(28,77,141,0.08); }
+    .qgx-sdoc-icon {
+        width: 28px; height: 28px; min-width: 28px;
+        background: var(--accent-light);
+        border-radius: 6px;
+        display: flex; align-items: center; justify-content: center;
+        color: var(--accent);
+        font-size: 0.78rem;
+    }
+    .qgx-sdoc-info { flex: 1; min-width: 0; }
+    .qgx-sdoc-name {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .qgx-sdoc-sub { font-size: 0.65rem; color: var(--text-soft); margin-top: 1px; }
+    .qgx-page-pill {
+        display: none;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        background: rgba(28,77,141,0.1);
+        color: var(--brand);
+        border-radius: 20px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+    .qgx-page-pill.visible { display: inline-flex; }
+    .qgx-sdoc-edit-hint {
+        font-size: 0.65rem;
+        color: var(--text-soft);
+        white-space: nowrap;
+    }
+
+    /* CHANGE 3 — difficulty box */
+    .qgx-right-col { display: flex; flex-direction: column; gap: 14px; }
+
+    .qgx-difficulty-box {
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 16px 18px;
+        background: #fafbfd;
+    }
+    .qgx-difficulty-box .qgx-pages-col-label { margin-bottom: 12px; }
+
+
+    .qgx-marks-box {
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 18px 20px;
+        background: #fafbfd;
+    }
+    .qgx-marks-top-row {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+    .qgx-marks-val {
+        font-size: 1.5rem;
+        font-weight: 900;
+        color: var(--brand);
+        line-height: 1;
+        font-family: 'Fraunces', serif;
+    }
+    .qgx-marks-lbl { font-size: 0.75rem; color: var(--text-soft); }
+    .qgx-marks-range-hint { font-size: 0.72rem; color: var(--text-soft); text-align: right; }
+    .qgx-marks-range-hint div { margin-top: 2px; }
+
+    .qgx-marks-slider {
+        width: 100%;
+        -webkit-appearance: none;
+        height: 6px;
+        border-radius: 3px;
+        background: linear-gradient(to right, #1C4D8D 49%, #e2e8f0 49%);
+        cursor: pointer;
+    }
+    .qgx-marks-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 20px; height: 20px;
+        border-radius: 50%;
+        background: var(--brand);
+        border: 3px solid #fff;
+        box-shadow: 0 2px 8px rgba(28,77,141,0.25);
+        cursor: pointer;
+        transition: transform 0.15s;
+    }
+    .qgx-marks-slider::-webkit-slider-thumb:hover { transform: scale(1.15); }
+    .qgx-marks-ticks {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.65rem;
+        color: var(--text-soft);
+        margin-top: 4px;
+    }
+    .qgx-marks-manual-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 12px;
+    }
+    .qgx-marks-manual-label { font-size: 0.78rem; color: var(--text-mid); }
+    .qgx-marks-manual-input {
+        width: 80px;
+        padding: 6px 10px;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--brand);
+        text-align: center;
+    }
+
+    .qgx-qtype-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 12px;
+    }
+    .qgx-qtype-card {
+        border: 2px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 14px 16px;
+        transition: var(--transition);
+        background: #fafbfd;
+        cursor: pointer;
+    }
+    .qgx-qtype-card:hover { border-color: var(--brand); background: var(--brand-light); }
+    .qgx-qtype-card.active {
+        border-color: var(--brand);
+        background: var(--brand-light);
+        box-shadow: 0 0 0 3px rgba(28,77,141,0.1);
+    }
+    .qgx-qtype-hdr {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    .qgx-qtype-toggle {
+        width: 20px; height: 20px; min-width: 20px;
+        border-radius: 4px;
+        border: 2px solid var(--border);
+        display: flex; align-items: center; justify-content: center;
+        transition: var(--transition);
+    }
+    .qgx-qtype-card.active .qgx-qtype-toggle { background: var(--brand); border-color: var(--brand); }
+    .qgx-qtype-card.active .qgx-qtype-toggle i { opacity: 1 !important; }
+    .qgx-qtype-toggle i { font-size: 0.65rem; color: #fff; opacity: 0; }
+
+    .qgx-qtype-icon {
+        width: 32px; height: 32px;
+        border-radius: 7px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.9rem;
+    }
+    .qgx-qtype-icon.mcq  { background: rgba(28,77,141,0.1); color: var(--brand); }
+    .qgx-qtype-icon.tf   { background: rgba(46,204,141,0.1); color: var(--green); }
+    .qgx-qtype-icon.fitb { background: rgba(245,158,11,0.1); color: #d97706; }
+    .qgx-qtype-icon.sa   { background: rgba(124,92,191,0.1); color: var(--purple); }
+    .qgx-qtype-icon.desc { background: rgba(240,100,73,0.1); color: var(--accent); }
+
+    .qgx-qtype-name { font-size: 0.85rem; font-weight: 700; color: var(--text); flex: 1; }
+
+    .qgx-count-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        opacity: 0.4;
+        transition: opacity 0.2s;
+        pointer-events: none;
+    }
+    .qgx-qtype-card.active .qgx-count-row { opacity: 1; pointer-events: all; }
+    .qgx-count-row label { font-size: 0.73rem; font-weight: 600; color: var(--text-mid); white-space: nowrap; }
+
+    .qgx-count-ctrl {
+        display: flex;
+        align-items: center;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+    }
+    .qgx-count-ctrl button {
+        width: 28px; height: 28px;
+        background: #edf0f5;
+        border: none;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--text-mid);
+        transition: background 0.15s;
+        line-height: 1;
+    }
+    .qgx-count-ctrl button:hover { background: var(--brand); color: #fff; }
+    .qgx-count-ctrl input {
+        width: 44px;
+        border: none;
+        border-left: 1.5px solid var(--border);
+        border-right: 1.5px solid var(--border);
+        text-align: center;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--brand);
+        padding: 4px 0;
+        background: #fff;
+    }
+    .qgx-count-ctrl input:focus { outline: none; }
+    .qgx-count-ctrl input::-webkit-inner-spin-button,
+    .qgx-count-ctrl input::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .qgx-qtype-desc { font-size: 0.7rem; color: var(--text-soft); margin-top: 8px; }
+
+    /* Results — unchanged styles kept */
+    .qgx-results-hdr { display:flex; align-items:flex-start; justify-content:space-between; padding:18px 0; border-bottom:1.5px solid var(--border); margin-bottom:16px; }
+    .qgx-results-count-val { font-size:1.8rem; font-weight:900; color:var(--green); font-family:'Fraunces',serif; }
+    .qgx-results-count-lbl { font-size:0.75rem; color:var(--text-soft); margin-top:3px; }
+    .qgx-results-meta-group { display:flex; gap:20px; margin-left:auto; }
+    .qgx-results-meta-item { text-align:right; }
+    .qgx-results-meta-label { font-size:0.88rem; color:var(--text-mid); font-weight:600; }
+    .qgx-results-meta-val { font-size:1.5rem; color:var(--brand); font-weight:700; margin-top:4px; }
+
+    .qgx-marks-total-bar { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-radius:var(--radius-sm); border:1.5px solid var(--border); background:#fafbfd; margin-bottom:12px; font-size:0.82rem; font-weight:600; flex-wrap:wrap; gap:8px; }
+    .qgx-mbar-left { display:flex; align-items:center; gap:10px; }
+    .qgx-mbar-star { color:#d97706; font-size:0.9rem; }
+    .qgx-mbar-label { color:var(--text-mid); }
+    .qgx-mbar-used { font-size:1.3rem; font-family:'Fraunces',serif; font-weight:900; color:var(--brand); }
+    .qgx-mbar-sep { color:var(--text-soft); font-size:1rem; }
+    .qgx-mbar-total { font-size:1.3rem; font-family:'Fraunces',serif; font-weight:900; color:var(--text-mid); }
+    .qgx-mbar-status { font-size:0.72rem; font-weight:700; padding:3px 10px; border-radius:20px; }
+    .qgx-mbar-status.match { background:var(--green-light); color:#059669; }
+    .qgx-mbar-status.over  { background:#fef2f2; color:#dc2626; }
+    .qgx-mbar-status.under { background:rgba(245,158,11,0.1); color:#d97706; }
+
+    .qgx-filter-bar { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; padding:12px; background:#fafbfd; border-radius:var(--radius-sm); border:1px solid var(--border); flex-wrap:wrap; gap:10px; }
+    .qgx-filter-bar-inner { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .qgx-filter-bar-label { font-size:0.78rem; color:var(--text-soft); font-weight:600; }
+    .qgx-filter-btn { padding:6px 14px; border:1.5px solid var(--border); background:#fff; color:var(--text-mid); border-radius:var(--radius-sm); font-size:0.75rem; font-weight:600; cursor:pointer; transition:var(--transition); font-family:'DM Sans',sans-serif; }
+    .qgx-filter-btn:hover { border-color:var(--brand); color:var(--brand); }
+    .qgx-filter-btn.active { background:var(--brand); color:#fff; border-color:var(--brand); }
+
+    .qgx-type-partition { display:table-row; }
+    .qgx-type-partition td { padding:0 !important; }
+    .qgx-partition-banner { display:flex; align-items:center; gap:10px; padding:9px 14px; font-size:0.78rem; font-weight:700; letter-spacing:0.4px; border-left:4px solid transparent; }
+    .qgx-partition-banner .pb-icon { width:26px; height:26px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:0.78rem; }
+    .qgx-partition-banner .pb-label { flex:1; }
+    .qgx-partition-banner .pb-count { font-size:0.68rem; font-weight:600; padding:2px 8px; border-radius:20px; opacity:0.85; }
+    .pb-mcq  { background:rgba(28,77,141,0.07);  border-left-color:#1C4D8D; color:#1C4D8D; }
+    .pb-mcq  .pb-icon { background:rgba(28,77,141,0.15); color:#1C4D8D; }
+    .pb-mcq  .pb-count { background:rgba(28,77,141,0.12); color:#1C4D8D; }
+    .pb-tf   { background:rgba(46,204,141,0.07);  border-left-color:#2ecc8d; color:#059669; }
+    .pb-tf   .pb-icon { background:rgba(46,204,141,0.15); color:#059669; }
+    .pb-tf   .pb-count { background:rgba(46,204,141,0.15); color:#059669; }
+    .pb-fitb { background:rgba(245,158,11,0.07);  border-left-color:#d97706; color:#b45309; }
+    .pb-fitb .pb-icon { background:rgba(245,158,11,0.15); color:#b45309; }
+    .pb-fitb .pb-count { background:rgba(245,158,11,0.12); color:#b45309; }
+    .pb-sa   { background:rgba(124,92,191,0.07);  border-left-color:#7c5cbf; color:#6d28d9; }
+    .pb-sa   .pb-icon { background:rgba(124,92,191,0.15); color:#6d28d9; }
+    .pb-sa   .pb-count { background:rgba(124,92,191,0.12); color:#6d28d9; }
+    .pb-desc { background:rgba(240,100,73,0.07);  border-left-color:#F06449; color:#c2410c; }
+    .pb-desc .pb-icon { background:rgba(240,100,73,0.15); color:#c2410c; }
+    .pb-desc .pb-count { background:rgba(240,100,73,0.12); color:#c2410c; }
+
+    .qgx-table-wrap { overflow-x:auto; margin-bottom:16px; border:1.5px solid var(--border); border-radius:var(--radius-sm); }
+    .qgx-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    font-size: 0.78rem;
+    /* CRITICAL: Tells the table to use strict widths */
+    table-layout: fixed !important;
+}
+    .qgx-table thead { background:linear-gradient(135deg,#1C4D8D 0%,#2563b0 100%); }
+    .qgx-table th { padding:12px 10px; text-align:left; font-size:0.75rem; font-weight:700; color:#fff; letter-spacing:0.3px; text-transform:uppercase; }
+    .qgx-table tbody tr { border-bottom:1px solid var(--border); transition:background 0.15s; }
+    .qgx-table tbody tr:hover { background:#f8fafc; }
+    .qgx-table tbody tr.qgx-type-partition:hover { background:inherit; }
+    .qgx-table td { padding:12px 10px; font-size:0.78rem; color:var(--text);  overflow: hidden; }
+
+    .qgx-q-cell { font-weight:600; color:var(--text); line-height:1.3; }
+    .qgx-opts-cell { font-size:0.75rem; line-height:1.4; }
+    .qgx-opt-row { display:flex; gap:8px; margin:2px 0; }
+    .qgx-opt-label { min-width:20px; font-weight:700; color:var(--brand); }
+    .qgx-opt-text { color:var(--text-mid); word-break:break-word; }
+    .qgx-opt-text.correct { color:var(--green); font-weight:600; background:rgba(46,204,141,0.1); padding:1px 4px; border-radius:3px; }
+
+    .qgx-type-badge { display:inline-block; padding:4px 10px; border-radius:20px; font-size:0.7rem; font-weight:700; text-transform:uppercase; }
+    .qgx-type-badge.mcq  { background:rgba(28,77,141,0.1); color:var(--brand); }
+    .qgx-type-badge.tf   { background:rgba(46,204,141,0.1); color:var(--green); }
+    .qgx-type-badge.fitb { background:rgba(245,158,11,0.1); color:#d97706; }
+    .qgx-type-badge.sa   { background:rgba(124,92,191,0.1); color:var(--purple); }
+    .qgx-type-badge.desc { background:rgba(240,100,73,0.1); color:var(--accent); }
+
+    .qgx-ans-badge { display:inline-block; padding:4px 8px; background:rgba(46,204,141,0.15); color:var(--green); border-radius:3px; font-weight:700; font-size:0.7rem; }
+
+.qgx-source-cell {
+    font-size: 0.7rem;
+    /* Force strict width */
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    
+    /* Layout */
+    display: block; /* Use block instead of flex to prevent width expansion issues */
+    position: relative;
+}
+   
+
+.qgx-source-primary {
+    display: block;
+    width: 100%;
+    min-width: 0; /* Critical for flex/table shrinkage */
+    
+    /* Truncation */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    
+    color: var(--text-mid);
+    font-weight: 600;
+    /* Add padding here so the ellipsis doesn't touch the edge */
+    padding: 12px 10px; 
+    box-sizing: border-box; /* Ensures padding is included in the 100% width */
+}
+
+.qgx-source-more {
+    /* Make the button absolute so it doesn't push the text width */
+    position: absolute;
+    right: 10px;
+    top: 2px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-size: 0.65rem;
+    padding: 1px 4px;
+    z-index: 2;
+    cursor: pointer;
+}   
+    .qgx-source-all { display:none; flex-direction:column; gap:2px; margin-top:3px; }
+    .qgx-source-all.show {
+    display: block; /* Block ensures it doesn't expand width */
+    margin-top: 3px;
+    width: 100%;
+    overflow: hidden;
+    background: #f1f5f9;
+    padding: 4px;
+    box-sizing: border-box;
+}
+    .qgx-source-tag { font-size:0.65rem; color:var(--text-soft); background:#f1f5f9; padding:1px 5px; border-radius:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100px; }
+
+    .qgx-action-btns { display:flex; gap:4px; }
+    .qgx-btn-sm { padding:4px 8px; font-size:0.68rem; border-radius:3px; border:1px solid var(--border); background:#fff; color:var(--text-mid); cursor:pointer; transition:all 0.2s; }
+    .qgx-btn-sm:hover { background:var(--brand); color:#fff; border-color:var(--brand); }
+    .qgx-btn-sm.danger:hover { background:#dc2626; border-color:#dc2626; color:#fff; }
+
+    .qgx-tbl-empty { text-align:center; padding:40px 20px; color:var(--text-soft); }
+    .qgx-tbl-empty i { font-size:2.5rem; display:block; margin-bottom:10px; opacity:0.3; }
+
+    .qgx-marks-inline { display:flex; align-items:center; gap:4px; }
+    .qgx-marks-inline input { width:46px; padding:4px 6px; border:1.5px solid var(--border); border-radius:5px; font-family:'DM Sans',sans-serif; font-size:0.8rem; font-weight:700; color:var(--brand); text-align:center; background:#fafbfd; transition:var(--transition); }
+    .qgx-marks-inline input:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 2px rgba(28,77,141,0.12); }
+    .qgx-marks-inline input::-webkit-inner-spin-button, .qgx-marks-inline input::-webkit-outer-spin-button { -webkit-appearance:none; }
+
+    .qgx-stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px; }
+    .qgx-stat-box { background:#fff; border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:14px; }
+    .qgx-stat-hdr { display:flex; align-items:center; gap:8px; font-size:0.78rem; font-weight:700; color:var(--brand); margin-bottom:10px; padding-bottom:8px; border-bottom:1.5px solid var(--border); }
+    .qgx-stat-breakdown { display:flex; flex-wrap:wrap; gap:12px; }
+    .qgx-stat-item { display:flex; align-items:center; gap:6px; font-size:0.8rem; }
+    .qgx-stat-count { font-weight:700; color:var(--brand); }
+    .qgx-marks-bk-list { display:flex; flex-direction:column; gap:8px; font-size:0.75rem; }
+    .qgx-marks-bk-item { display:flex; align-items:center; justify-content:space-between; padding:6px 8px; background:#fafbfd; border-radius:4px; }
+    .qgx-marks-badge { display:inline-block; padding:2px 6px; background:rgba(28,77,141,0.1); color:var(--brand); border-radius:3px; font-weight:700; font-size:0.7rem; }
+    .qgx-marks-val-green { font-weight:700; color:var(--green); font-family:'Fraunces',serif; }
+
+    .qgx-section { background:#fafbfd; border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:16px; margin-bottom:16px; }
+    .qgx-section-hdr { display:flex; align-items:center; gap:8px; margin-bottom:14px; padding-bottom:10px; border-bottom:2px solid var(--border); }
+    .qgx-section-hdr h3 { margin:0; font-size:0.9rem; font-weight:700; color:var(--brand); }
+    .qgx-section-hdr i  { color:var(--brand); font-size:1.1rem; }
+
+    .qgx-ctrl-group { display:flex; flex-direction:column; }
+    .qgx-ctrl-group label { font-size:0.78rem; font-weight:600; color:var(--text-mid); margin-bottom:4px; }
+    .qgx-ctrl-group input[type="text"], .qgx-ctrl-group input[type="number"], .qgx-ctrl-group textarea, .qgx-ctrl-group select { padding:8px 10px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:'DM Sans',sans-serif; font-size:0.82rem; background:#fff; transition:var(--transition); }
+    .qgx-ctrl-group input:focus, .qgx-ctrl-group textarea:focus, .qgx-ctrl-group select:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 3px rgba(28,77,141,0.1); }
+    .qgx-ctrl-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .qgx-chk-group { display:flex; flex-direction:column; gap:8px; }
+    .qgx-chk-group label { display:flex; align-items:center; gap:8px; font-weight:500; margin-bottom:0; cursor:pointer; }
+    .qgx-chk-group input[type="checkbox"] { width:18px; height:18px; cursor:pointer; }
+    .qgx-gen-controls { display:grid; gap:12px; }
+    .qgx-pdf-actions { display:flex; gap:10px; margin-top:12px; }
+
+    .qgx-save-row { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+    .qgx-save-desc { font-size:0.82rem; color:var(--text-mid); line-height:1.5; }
+
+    .qgx-summary { background:linear-gradient(135deg,#1C4D8D 0%,#2d6cb5 100%); border-radius:var(--radius); padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px; opacity:0; transform:translateY(12px); transition:all 0.35s cubic-bezier(.4,0,.2,1); pointer-events:none; }
+    .qgx-summary.visible { opacity:1; transform:translateY(0); pointer-events:all; }
+    .qgx-sum-items { display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+    .qgx-sum-item  { display:flex; align-items:center; gap:7px; }
+    .qgx-sum-dot   { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,0.5); }
+    .qgx-sum-dot.filled { background:#7de8c0; }
+    .qgx-sum-label { font-size:0.78rem; color:rgba(255,255,255,0.75); }
+    .qgx-sum-val   { font-size:0.78rem; font-weight:700; color:#fff; }
+
+    .qgx-btn-generate { background:linear-gradient(135deg,var(--accent) 0%,#e05235 100%); color:#fff; border:none; padding:12px 32px; border-radius:40px; font-family:'DM Sans',sans-serif; font-size:0.9rem; font-weight:700; cursor:pointer; transition:var(--transition); display:flex; align-items:center; gap:8px; box-shadow:0 4px 18px rgba(240,100,73,0.32); white-space:nowrap; }
+    .qgx-btn-generate:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 6px 24px rgba(240,100,73,0.42); }
+    .qgx-btn-generate:disabled { background:#94a3b8; cursor:not-allowed; transform:none; box-shadow:none; }
+
+    .qgx-btn-save { background:linear-gradient(135deg,var(--green) 0%,#22b573 100%); color:#fff; border:none; padding:12px 28px; border-radius:40px; font-family:'DM Sans',sans-serif; font-size:0.9rem; font-weight:700; cursor:pointer; transition:var(--transition); display:flex; align-items:center; gap:8px; box-shadow:0 4px 16px rgba(46,204,141,0.32); white-space:nowrap; }
+    .qgx-btn-save:hover { transform:translateY(-2px); box-shadow:0 6px 22px rgba(46,204,141,0.42); }
+    .qgx-btn-save:disabled { background:#94a3b8; cursor:not-allowed; transform:none; box-shadow:none; }
+
+    .qgx-nav-row { display:flex; align-items:center; justify-content:space-between; margin-top:8px; flex-wrap:wrap; gap:10px; }
+    .qgx-btn-nav { padding:9px 22px; border-radius:var(--radius-sm); font-family:'DM Sans',sans-serif; font-size:0.85rem; font-weight:600; cursor:pointer; transition:var(--transition); display:flex; align-items:center; gap:7px; border:2px solid var(--border); background:#fff; color:var(--text-mid); }
+    .qgx-btn-nav:hover { border-color:var(--brand); color:var(--brand); }
+    .qgx-btn-nav.primary { background:var(--brand); color:#fff; border-color:var(--brand); }
+    .qgx-btn-nav.primary:hover { background:#153f73; border-color:#153f73; color:#fff; transform:translateY(-1px); }
+    .qgx-btn-nav:disabled, .qgx-btn-nav.primary:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+
+    .qgx-val-msg { font-size:0.75rem; padding:8px 12px; border-radius:var(--radius-sm); display:none; align-items:center; gap:7px; margin-top:10px; }
+    .qgx-val-msg.error   { display:flex; background:#fef2f2; color:#dc2626; border:1px solid #fecaca; }
+    .qgx-val-msg.success { display:flex; background:var(--green-light); color:#059669; border:1px solid #a7f3d0; }
+    .qgx-val-msg.info    { display:flex; background:var(--brand-light); color:var(--brand); border:1px solid rgba(28,77,141,0.2); }
+
+    .qgx-loading { display:none; position:fixed; inset:0; background:rgba(15,25,50,0.55); backdrop-filter:blur(3px); z-index:9999; align-items:center; justify-content:center; flex-direction:column; gap:16px; }
+    .qgx-loading.show { display:flex; }
+    .qgx-spinner { width:56px; height:56px; border:5px solid rgba(255,255,255,0.15); border-top-color:#fff; border-radius:50%; animation:qgx-spin 0.8s linear infinite; }
+    .qgx-loading-text { color:#fff; font-size:1rem; font-weight:600; }
+    @keyframes qgx-spin { to { transform:rotate(360deg); } }
+
+    /* Edit modal */
+    .qgx-modal-overlay { display:none; position:fixed; inset:0; background:rgba(15,25,50,0.6); backdrop-filter:blur(4px); z-index:10000; align-items:center; justify-content:center; padding:20px; }
+    .qgx-modal-overlay.show { display:flex; }
+    .qgx-modal-box { background:#fff; border-radius:var(--radius); box-shadow:0 20px 60px rgba(28,77,141,0.22); width:100%; max-width:640px; max-height:90vh; overflow-y:auto; animation:qgx-modal-in 0.22s cubic-bezier(.4,0,.2,1); }
+    @keyframes qgx-modal-in { from { opacity:0; transform:scale(0.95) translateY(12px); } to { opacity:1; transform:scale(1) translateY(0); } }
+    .qgx-modal-hdr { display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1.5px solid var(--border); position:sticky; top:0; background:#fff; z-index:1; }
+    .qgx-modal-hdr h3 { font-size:0.95rem; font-weight:700; color:var(--brand); display:flex; align-items:center; gap:8px; }
+    .qgx-modal-close { width:30px; height:30px; border:none; background:#f1f5f9; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--text-soft); font-size:0.9rem; transition:var(--transition); }
+    .qgx-modal-close:hover { background:#fef2f2; color:#dc2626; }
+    .qgx-modal-body { padding:20px 22px; display:flex; flex-direction:column; gap:14px; }
+    .qgx-modal-field label { display:block; font-size:0.75rem; font-weight:700; color:var(--text-mid); margin-bottom:5px; }
+    .qgx-modal-field textarea, .qgx-modal-field input[type="text"], .qgx-modal-field input[type="number"], .qgx-modal-field select { width:100%; padding:9px 12px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:'DM Sans',sans-serif; font-size:0.83rem; background:#fafbfd; color:var(--text); transition:var(--transition); resize:vertical; }
+    .qgx-modal-field textarea:focus, .qgx-modal-field input:focus, .qgx-modal-field select:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 3px rgba(28,77,141,0.1); background:#fff; }
+    .qgx-opts-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .qgx-opt-field { display:flex; align-items:center; gap:8px; }
+    .qgx-opt-lbl { width:24px; height:24px; min-width:24px; border-radius:5px; background:var(--brand-light); color:var(--brand); font-size:0.72rem; font-weight:700; display:flex; align-items:center; justify-content:center; }
+    .qgx-opt-field input { flex:1; padding:8px 10px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:'DM Sans',sans-serif; font-size:0.82rem; background:#fafbfd; transition:var(--transition); }
+    .qgx-opt-field input:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 3px rgba(28,77,141,0.1); }
+    .qgx-modal-footer { padding:14px 22px; border-top:1.5px solid var(--border); display:flex; justify-content:flex-end; gap:10px; }
+    .qgx-marks-req-max { max-width:160px; }
+    #editCorrectAnswerInput { width:100%; padding:9px 12px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:'DM Sans',sans-serif; font-size:0.83rem; background:#fafbfd; color:var(--text); transition:var(--transition); }
+    #editCorrectAnswerInput:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 3px rgba(28,77,141,0.1); background:#fff; }
+    #editCorrectAnswerTextarea { width:100%; padding:9px 12px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:'DM Sans',sans-serif; font-size:0.83rem; background:#fafbfd; color:var(--text); transition:var(--transition); resize:vertical; min-height:90px; }
+    #editCorrectAnswerTextarea:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 3px rgba(28,77,141,0.1); background:#fff; }
+
+    .qgx-ans-expand { display:inline-block; max-width:200px; }
+    .qgx-ans-short  { display:inline; }
+    .qgx-ans-full   { display:none; }
+    .qgx-ans-expand.expanded .qgx-ans-short { display:none; }
+    .qgx-ans-expand.expanded .qgx-ans-full  { display:inline; }
+    .qgx-btn-expand { background:none; border:none; color:var(--brand); font-size:0.7rem; font-weight:700; cursor:pointer; padding:0 3px; font-family:'DM Sans',sans-serif; text-decoration:underline; vertical-align:middle; }
+    .qgx-btn-expand:hover { color:var(--accent); }
+
+    .qgx-divider { height:1.5px; background:var(--border); margin:14px 0; }
+    .qgx-step3-sub { font-size:0.7rem; color:var(--text-soft); font-weight:400; margin-left:auto; }
+    .bcd { display:none; }
+    .abc { font-size:1.3rem; opacity:0.9; }
+    .abcd { color:var(--brand); }
+    .abcde { color:#d97706; }
+    .acd { color:var(--green); }
+    .acde { width:3%; }
+    .acdf { width:22%; }
+    .acdg { width:35%; }
+    .acdh { width:8%; }
+    .acdi { width:5%; }
+    .acdj { width:12%; }
+    .acdk {
+    width: 11% !important; /* Force it to be this % of the table */
+    min-width: 100px;   /* Don't let it get too small */
+    max-width: 130px;   /* Don't let it get too big (Prevents the 'out of box' issue) */
+}
+    .acdl { width:6%; }
+    .acdM { padding-top:4px; }
+    .acdN { margin-top:10px; }
+    .acdO { color:var(--accent); }
+    .acdp { color:var(--accent); }
+    .acdq { color:#dc2626; }
+    .acdlr { font-size:0.7rem; }
+    .acdls { color:var(--text-soft); font-size:0.72rem; }
+    .acdlt { color:var(--text-soft); }
+    .acdlu { color:var(--text-soft); }
+    .acdlv { color:#dc2626; }
+
+    /* page modal */
+    .qgx-page-modal-overlay { display:none; position:fixed; inset:0; background:rgba(15,25,50,0.35); backdrop-filter:blur(2px); z-index:10001; align-items:center; justify-content:center; }
+    .qgx-page-modal-overlay.show { display:flex; }
+    .qgx-page-modal { background:#fff; border-radius:var(--radius); box-shadow:0 12px 40px rgba(28,77,141,0.18); width:340px; padding:20px 22px; animation:qgx-modal-in 0.18s cubic-bezier(.4,0,.2,1); }
+    .qgx-page-modal-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+    .qgx-page-modal-hdr h4 { font-size:0.88rem; font-weight:700; color:var(--brand); display:flex; align-items:center; gap:7px; margin:0; }
+    .qgx-page-modal-close { width:26px; height:26px; border:none; background:#f1f5f9; border-radius:5px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--text-soft); font-size:0.8rem; transition:var(--transition); }
+    .qgx-page-modal-close:hover { background:#fef2f2; color:#dc2626; }
+    .qgx-page-modal-doc { font-size:0.75rem; color:var(--text-mid); background:var(--brand-light); padding:6px 10px; border-radius:5px; margin-bottom:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .qgx-page-modal label { display:block; font-size:0.73rem; font-weight:600; color:var(--text-mid); margin-bottom:5px; }
+    .qgx-page-modal input[type="text"] { width:100%; padding:9px 11px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:'DM Sans',sans-serif; font-size:0.83rem; background:#fafbfd; transition:var(--transition); }
+    .qgx-page-modal input[type="text"]:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 3px rgba(28,77,141,0.1); background:#fff; }
+    .qgx-page-modal-hint { font-size:0.67rem; color:var(--text-soft); margin-top:4px; }
+    .qgx-page-modal-footer { display:flex; gap:8px; margin-top:14px; justify-content:flex-end; }
+</style>
+
+<style>
+/* Export buttons */
+.qgx-export-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+.qgx-btn-export {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+.qgx-btn-export:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,0.14); }
+.qgx-btn-export:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.qgx-btn-export.txt  { background: #f1f5f9; color: #334155; border: 1.5px solid #cbd5e1; }
+.qgx-btn-export.txt:hover  { background: #e2e8f0; }
+
+.qgx-btn-export.xlsx { background: #dcfce7; color: #166534; border: 1.5px solid #86efac; }
+.qgx-btn-export.xlsx:hover { background: #bbf7d0; }
+
+.qgx-btn-export.docx { background: #dbeafe; color: #1e40af; border: 1.5px solid #93c5fd; }
+.qgx-btn-export.docx:hover { background: #bfdbfe; }
+</style>
+<style id="difficulty-patch">
+/* ── Difficulty buttons — brand-aligned ──────────────────────────────────── */
+.qgx-diff-options {
+    display: flex;
+    gap: 10px;
+}
+.qgx-diff-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 9px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: #fafbfd;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-mid);
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: center;
+    white-space: nowrap;
+}
+.qgx-diff-btn:hover {
+    border-color: var(--brand);
+    background: var(--brand-light);
+    color: var(--brand);
+}
+/* Active states — use brand palette tokens, no raw green/red */
+.qgx-diff-btn.active-easy {
+    background: var(--brand-light);
+    border-color: var(--brand);
+    color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(28,77,141,0.1);
+    font-weight: 700;
+}
+.qgx-diff-btn.active-medium {
+    background: rgba(245,158,11,0.08);
+    border-color: #d97706;
+    color: #92400e;
+    box-shadow: 0 0 0 3px rgba(245,158,11,0.12);
+    font-weight: 700;
+}
+.qgx-diff-btn.active-hard {
+    background: rgba(240,100,73,0.08);
+    border-color: var(--accent);
+    color: #b84030;
+    box-shadow: 0 0 0 3px rgba(240,100,73,0.12);
+    font-weight: 700;
+}
+/* Remove the emoji icons — replace with small dot indicator */
+.qgx-diff-icons { display: none; }
+
+/* Dot indicator per level */
+.qgx-diff-btn::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-soft);
+    flex-shrink: 0;
+    transition: background 0.2s;
+}
+.qgx-diff-btn[data-diff="easy"]::before   { background: #64a4e1; }
+.qgx-diff-btn[data-diff="medium"]::before { background: #d97706; }
+.qgx-diff-btn[data-diff="hard"]::before   { background: var(--accent); }
+
+.qgx-diff-hint {
+    font-size: 0.68rem;
+    color: var(--text-soft);
+    margin-top: 8px;
+    font-style: italic;
+    padding-left: 2px;
+}
+
+
+
+
+/* ── Global hierarchy tooltip (mirrored from hierarchy view) ── */
+.g-tooltip.visible {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+}
+#gHierarchyCard {
+    background: #0f1628;
+    border-radius: 14px;
+    padding: 16px 18px;
+    width: 280px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.45), 0 0 0 1px rgba(102,126,234,0.3);
+}
+.dhc-title { font-size:0.72rem;font-weight:700;color:#667eea;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px;display:flex;align-items:center;gap:6px; }
+.dhc-title i { font-size:0.8rem; }
+.dhc-path { display:flex;flex-direction:column; }
+.dhc-step { display:flex;align-items:flex-start;gap:10px;position:relative; }
+.dhc-step:not(:last-child)::after { content:'';position:absolute;left:13px;top:27px;width:2px;height:calc(100% - 5px);background:linear-gradient(to bottom,#667eea55,#764ba233); }
+.dhc-icon-wrap { width:26px;height:26px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;margin-top:1px; }
+.dhc-icon-course  { background:rgba(220,53,69,0.2);color:#ff6b7a; }
+.dhc-icon-leg     { background:rgba(255,193,7,0.2);color:#ffc107; }
+.dhc-icon-subject { background:rgba(111,66,193,0.2);color:#b07cff; }
+.dhc-icon-chapter { background:rgba(28,77,141,0.3);color:#7baeff; }
+.dhc-icon-topic   { background:rgba(23,162,184,0.2);color:#4dd8e8; }
+.dhc-icon-section { background:rgba(40,167,69,0.2);color:#5ae07a; }
+.dhc-step-content { padding-bottom:10px;flex:1;min-width:0; }
+.dhc-step-label { font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#4a5a7a;line-height:1; }
+.dhc-step-value { font-size:0.78rem;font-weight:600;color:#cbd5e0;margin-top:2px;line-height:1.3;word-break:break-word; }
+.dhc-step.active .dhc-step-value { color:#fff; }
+.dhc-step.active .dhc-icon-wrap  { box-shadow:0 0 0 2px rgba(102,126,234,0.6); }
+.dhc-level-badge { display:inline-flex;align-items:center;gap:4px;background:rgba(102,126,234,0.2);color:#a5b4fc;font-size:0.58rem;font-weight:700;padding:2px 7px;border-radius:20px;margin-top:4px;text-transform:uppercase;letter-spacing:0.06em; }
+
+
+/* ── Help / Info button & popup ─────────────────────────────────── */
+.qgx-help-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.qgx-help-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s, transform 0.2s;
+    font-family: 'DM Sans', sans-serif;
+    flex-shrink: 0;
+    backdrop-filter: blur(4px);
+    font-style: italic;
+}
+
+.qgx-help-btn:hover {
+    background: rgba(255, 255, 255, 0.28);
+    border-color: rgba(255, 255, 255, 0.9);
+    transform: scale(1.08);
+}
+
+.qgx-help-popup {
+    display: none;
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    width: 420px;
+    max-height: 700px;
+    overflow-y: auto;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 16px 56px rgba(28, 77, 141, 0.22), 0 2px 12px rgba(28, 77, 141, 0.1);
+    border: 1.5px solid #dde3ef;
+    z-index: 999;
+    animation: qgx-popup-in 0.18s cubic-bezier(.4, 0, .2, 1);
+}
+
+.qgx-help-popup::-webkit-scrollbar {
+    width: 5px;
+}
+
+.qgx-help-popup::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+}
+
+.qgx-help-popup::-webkit-scrollbar-thumb {
+    background: #c7d2e7;
+    border-radius: 10px;
+}
+
+@keyframes qgx-popup-in {
+    from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+.qgx-help-wrap:hover .qgx-help-popup,
+.qgx-help-wrap:focus-within .qgx-help-popup {
+    display: block;
+}
+
+/* Popup header */
+.qgx-hp-head {
+    background: linear-gradient(135deg, #1C4D8D 0%, #2563b0 100%);
+    border-radius: 14px 14px 0 0;
+    padding: 16px 20px 14px;
+}
+
+.qgx-hp-head-title {
+    font-family: 'Fraunces', serif;
+    font-size: 1rem;
+    font-weight: 900;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 3px;
+}
+
+.qgx-hp-head-sub {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+/* Popup body */
+.qgx-hp-body {
+    padding: 16px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* Step block */
+.qgx-hp-step {
+    border: 1.5px solid #dde3ef;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.qgx-hp-step-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #f8fafc;
+    border-bottom: 1.5px solid #dde3ef;
+}
+
+.qgx-hp-step-num {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    border-radius: 50%;
+    background: #1C4D8D;
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qgx-hp-step-label {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #1a2340;
+    flex: 1;
+}
+
+.qgx-hp-step-tag {
+    font-size: 0.62rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: rgba(28, 77, 141, 0.1);
+    color: #1C4D8D;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.qgx-hp-step-body {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+/* Bullet point rows */
+.qgx-hp-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    font-size: 0.78rem;
+    color: #4a5568;
+    line-height: 1.55;
+}
+
+.qgx-hp-dot {
+    width: 6px;
+    height: 6px;
+    min-width: 6px;
+    border-radius: 50%;
+    background: #1C4D8D;
+    margin-top: 6px;
+    flex-shrink: 0;
+}
+
+.qgx-hp-dot-accent {
+    background: #F06449;
+}
+
+.qgx-hp-dot-green {
+    background: #2ecc8d;
+}
+
+.qgx-hp-dot-amber {
+    background: #d97706;
+}
+
+/* Inline highlight chips inside text */
+.qgx-hp-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 4px;
+    vertical-align: middle;
+}
+
+.qgx-hp-chip-brand {
+    background: rgba(28, 77, 141, 0.1);
+    color: #1C4D8D;
+}
+
+.qgx-hp-chip-accent {
+    background: rgba(240, 100, 73, 0.1);
+    color: #c2410c;
+}
+
+.qgx-hp-chip-green {
+    background: rgba(46, 204, 141, 0.12);
+    color: #059669;
+}
+
+.qgx-hp-chip-amber {
+    background: rgba(245, 158, 11, 0.1);
+    color: #92400e;
+}
+
+/* Warning/note box */
+.qgx-hp-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(240, 100, 73, 0.25);
+    background: rgba(240, 100, 73, 0.06);
+    font-size: 0.75rem;
+    color: #7c2d12;
+    line-height: 1.5;
+    margin-top: 4px;
+}
+
+.qgx-hp-note-icon {
+    color: #F06449;
+    font-size: 0.82rem;
+    margin-top: 1px;
+    flex-shrink: 0;
+}
+
+/* Info/tip box */
+.qgx-hp-tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(28, 77, 141, 0.2);
+    background: rgba(28, 77, 141, 0.05);
+    font-size: 0.75rem;
+    color: #1e3a5f;
+    line-height: 1.5;
+    margin-top: 4px;
+}
+
+.qgx-hp-tip-icon {
+    color: #1C4D8D;
+    font-size: 0.82rem;
+    margin-top: 1px;
+    flex-shrink: 0;
+}
+
+/* Results step uses green accent */
+.qgx-hp-step-results .qgx-hp-step-num {
+    background: #2ecc8d;
+}
+
+.qgx-hp-step-results .qgx-hp-step-tag {
+    background: rgba(46, 204, 141, 0.1);
+    color: #059669;
+}
+
+/* Divider between sections */
+.qgx-hp-divider {
+    height: 1px;
+    background: #dde3ef;
+    margin: 2px 0;
+}
+
+/* Popup footer */
+.qgx-hp-footer {
+    padding: 10px 20px 14px;
+    border-top: 1.5px solid #dde3ef;
+    font-size: 0.7rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+/* ── Header right group (badge + help button) ── */
+.qgx-hdr-right-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+}
+</style>
+
+{% endblock %}
+
+{% block content %}
+
+<div class="qgx-loading" id="loadingOverlay">
+    <div class="qgx-spinner"></div>
+    <div class="qgx-loading-text" id="loadingText">Generating Questions...</div>
+</div>
+<!-- Global floating hierarchy card (same as hierarchy view) -->
+<div class="g-tooltip" id="gHierarchyCard" style="position:fixed;z-index:99999;pointer-events:none;opacity:0;transform:translateY(6px);transition:opacity 0.15s ease,transform 0.15s ease;">
+    <div class="dhc-title" style="font-size:0.72rem;font-weight:700;color:#667eea;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+        <i class="fas fa-sitemap" style="font-size:0.8rem;"></i> Hierarchy Path
+    </div>
+    <div class="dhc-path" id="gHierarchyPath"></div>
+</div> 
+<div class="qgx-header">
+    <div class="qgx-hdr-left">
+        <h1><i class="fas fa-magic me-2 abc"></i>Question Generation</h1>
+        <p>Select documents, configure settings &amp; generate your question paper</p>
+    </div>
+    <div class="qgx-hdr-right-group">
+    <div class="qgx-hdr-badge"><i class="fas fa-bolt"></i>AI Powered</div>
+
+        <!-- ── Help / How-to button ── -->
+        <div class="qgx-help-wrap">
+            <button class="qgx-help-btn" aria-label="How to use this page" tabindex="0">i</button>
+
+            <div class="qgx-help-popup" role="tooltip">
+
+                <!-- Popup Header -->
+                <div class="qgx-hp-head">
+                    <div class="qgx-hp-head-title">
+                        <i class="fas fa-map-signs"></i> How to Use Question Generation
+                    </div>
+                    <div class="qgx-hp-head-sub">Follow these steps to generate your question paper</div>
+                </div>
+
+                <!-- Popup Body -->
+                <div class="qgx-hp-body">
+
+                    <!-- Step 1 -->
+                    <div class="qgx-hp-step">
+                        <div class="qgx-hp-step-head">
+                            <div class="qgx-hp-step-num">1</div>
+                            <div class="qgx-hp-step-label">Select Documents</div>
+                            <span class="qgx-hp-step-tag">Step 1</span>
+                        </div>
+                        <div class="qgx-hp-step-body">
+                            <div class="qgx-hp-item">
+                                <div class="qgx-hp-dot"></div>
+                                <span>Select at least one <span class="qgx-hp-chip qgx-hp-chip-brand">Course</span> from the dropdown — this is required to see available documents.</span>
+                            </div>
+                            <div class="qgx-hp-item">
+                                <div class="qgx-hp-dot"></div>
+                                <span>Narrow down documents further by selecting <span class="qgx-hp-chip qgx-hp-chip-brand">Leg</span>, <span class="qgx-hp-chip qgx-hp-chip-brand">Subject</span>, <span class="qgx-hp-chip qgx-hp-chip-brand">Chapter</span>, <span class="qgx-hp-chip qgx-hp-chip-brand">Topic</span>, or <span class="qgx-hp-chip qgx-hp-chip-brand">Section</span> — each level unlocks the next.</span>
+                            </div>
+                            <div class="qgx-hp-item">
+                                <div class="qgx-hp-dot"></div>
+                                <span>You can also use the <span class="qgx-hp-chip qgx-hp-chip-accent">Keyword Search</span> bar to find documents by name or content — useful when you know what you're looking for.</span>
+                            </div>
+                            <div class="qgx-hp-item">
+                                <div class="qgx-hp-dot"></div>
+                                <span>Click any document card to select it. You can select multiple documents. Selected count is shown in the bar below the list.</span>
+                            </div>
+                            <div class="qgx-hp-item">
+                                <div class="qgx-hp-dot"></div>
+                                <span>Hover over a document name to see its full hierarchy path (Course → Section).</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="qgx-hp-step">
+                        <div class="qgx-hp-step-head">
+                            <div class="qgx-hp-step-num">2</div>
+                            <div class="qgx-hp-step-label">Pages, Difficulty &amp; Marks</div>
+                            <span class="qgx-hp-step-tag">Step 2</span>
+                        </div>
+                        <div class="qgx-hp-step-body">
+                            <div class="qgx-hp-item">
+                                <div class="qgx-hp-dot qgx-hp-dot-amber"></div>
+                                <span><strong>Page Numbers</strong> — Optionally click a document row to set a specific page range (e.g. <em>1-5, 8, 10-12</em>). Leave blank to scan the entire document.</span>
+                            </div>
+                            <div class="qgx-hp-note">
+                                <i class="fas fa-exclamation-triangle qgx-hp-note-icon"></i>
+                                <span>If you enter a <strong>Topic Focus</strong> keyword in Step 3, page number selections are ignored — the AI will scan the full document for that topic instead.</span>
+                            </div>
+                            <div class="qgx-hp-item">
+                                <div class="qgx-hp-dot qgx-hp-dot-amber"></div>
+                                <span><strong>Difficulty Level</strong> — Choose <span class="qgx-hp-chip qgx-hp-chip-brand">Easy</span>, <span class="qgx-hp-chip qgx-hp-chip-amber">Medium</span>, or <span class="qgx-hp-chip qgx-hp-chip-accent">Hard</span>. This guides how the AI frames questions.</span>
+                            </div>
+                            <div class="qgx-hp-item">
+                                <div class="qgx-hp-dot qgx-hp-dot-amber"></div>
+                                <span><strong>Total Marks</strong> — Use the slider or type a number (1–100). This sets the target marks for the entire paper. You will need to assign these marks to individual questions in the Results step.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="qgx-hp-step">
+                        <div class="qgx-hp-step-head">
+                            <div class="qgx-hp-step-num">3</div>
+                            <div class="qgx-hp-step-label">Question Types &amp; Topic Focus</div>
+                            <span class="qgx-hp-step-tag">Step 3</span>
+                        </div>
+                        <div class="qgx-hp-step-body">
+                            <div class="qgx-hp-item">
+                                <div class="qgx-hp-dot qgx-hp-dot-green"></div>
+                                <span>Select one or more question types: <span class="qgx-hp-chip qgx-hp-chip-brand">MCQ</span> <span class="qgx-hp-chip qgx-hp-chip-green">True/False</span> <span class="qgx-hp-chip qgx-hp-chip-amber">Fill in Blank</span> <span class="qgx-hp-chip qgx-hp-chip-accent">Short Answer</span> <span class="qgx-hp-chip qgx-hp-chip-accent">Descriptive</span></span>
+                            </div>
+                            <div class="qgx-hp-item">
+                                <div class="qgx-hp-dot qgx-hp-dot-green"></div>
+                                <span>For each selected type, set the number of questions using the <strong>+</strong> / <strong>−</strong> controls. At least one type must be active.</span>
+                            </div>
+                            <div class="qgx-hp-item">
+                                <div class="qgx-hp-dot qgx-hp-dot-green"></div>
+                                <span><strong>Topic Focus</strong> (optional) — Enter a specific topic like <em>"Newton's laws"</em> or <em>"French Revolution"</em> to direct the AI to focus questions on that subject within your selected documents.</span>
+                            </div>
+                            <div class="qgx-hp-note">
+                                <i class="fas fa-exclamation-triangle qgx-hp-note-icon"></i>
+                                <span>When a <strong>Topic Focus</strong> is entered, page number ranges set in Step 2 have no effect — the entire document is searched for that topic.</span>
+                            </div>
+                            <div class="qgx-hp-item">
+                                <div class="qgx-hp-dot qgx-hp-dot-green"></div>
+                                <span>Click <span class="qgx-hp-chip qgx-hp-chip-accent"><i class="fas fa-magic"></i> Generate Questions</span> once you are satisfied with all settings.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results Step -->
+                    <div class="qgx-hp-step qgx-hp-step-results">
+                        <div class="qgx-hp-step-head">
+                            <div class="qgx-hp-step-num"><i class="fas fa-check" style="font-size:0.65rem;"></i></div>
+                            <div class="qgx-hp-step-label">Review, Assign Marks &amp; Export</div>
+                            <span class="qgx-hp-step-tag">Results</span>
+                        </div>
+                        <div class="qgx-hp-step-body">
+                            <div class="qgx-hp-item">
+                                <div class="qgx-hp-dot qgx-hp-dot-green"></div>
+                                <span><strong>Assign Marks</strong> — Each question has an editable marks field. The sum of all question marks must equal the <em>Total Marks</em> set in Step 2 before you can generate a PDF.</span>
+                            </div>
+                            <div class="qgx-hp-tip">
+                                <i class="fas fa-info-circle qgx-hp-tip-icon"></i>
+                                <span>The marks bar at the top of the results shows how many marks are assigned vs. the target. Aim for the <strong>✓ Marks match!</strong> status.</span>
+                            </div>
+                            <div class="qgx-hp-item">
+                                <div class="qgx-hp-dot qgx-hp-dot-green"></div>
+                                <span>Use the <strong>Edit</strong> <i class="fas fa-edit" style="font-size:0.7rem;"></i> button on any row to change the question text, options, answer, marks, or type.</span>
+                            </div>
+                            <div class="qgx-hp-item">
+                                <div class="qgx-hp-dot qgx-hp-dot-green"></div>
+                                <span>Use the <strong>Delete</strong> <i class="fas fa-trash" style="font-size:0.7rem;"></i> button to remove any question you do not want.</span>
+                            </div>
+
+                            <div class="qgx-hp-divider"></div>
+
+                            <div class="qgx-hp-item">
+                                <div class="qgx-hp-dot qgx-hp-dot-amber"></div>
+                                <span>Fill in the <span class="qgx-hp-chip qgx-hp-chip-brand">Paper Title</span>, <span class="qgx-hp-chip qgx-hp-chip-brand">School / Institute</span>, and <span class="qgx-hp-chip qgx-hp-chip-brand">Duration</span> fields. Add optional per-line instructions for students.</span>
+                            </div>
+                            <div class="qgx-hp-item">
+                                <div class="qgx-hp-dot qgx-hp-dot-amber"></div>
+                                <span>Check options to <em>Include Answer Key</em>, generate a <em>Separate Answer Sheet</em>, or <em>Show Marks Distribution</em> inside the PDF.</span>
+                            </div>
+
+                            <div class="qgx-hp-divider"></div>
+
+                            <div class="qgx-hp-item">
+                                <div class="qgx-hp-dot"></div>
+                                <span><strong>Export formats</strong> — Download as <span class="qgx-hp-chip qgx-hp-chip-brand">PDF</span>, <span class="qgx-hp-chip qgx-hp-chip-accent">TXT</span>, <span class="qgx-hp-chip qgx-hp-chip-green">Excel (.xlsx)</span>, or <span class="qgx-hp-chip qgx-hp-chip-amber">Word (.docx)</span>.</span>
+                            </div>
+                            <div class="qgx-hp-item">
+                                <div class="qgx-hp-dot"></div>
+                                <span><strong>Save to Database</strong> — Click <span class="qgx-hp-chip qgx-hp-chip-green"><i class="fas fa-database"></i> Save Questions</span> to store all questions in the Question Bank for future reuse.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- /qgx-hp-body -->
+
+                <div class="qgx-hp-footer">
+                    <i class="fas fa-info-circle"></i>
+                    Hover away from this panel to close it.
+                </div>
+
+            </div><!-- /qgx-help-popup -->
+        </div><!-- /qgx-help-wrap -->
+    </div><!-- /qgx-hdr-right-group -->
+</div>
+
+<div class="qgx-stepbar">
+    <div class="qgx-step active" id="stepItem1">
+        <div class="qgx-step-circle" id="stepCircle1">1</div>
+        <div class="qgx-step-label">Select Documents</div>
+    </div>
+    <div class="qgx-step" id="stepItem2">
+        <div class="qgx-step-circle" id="stepCircle2">2</div>
+        <div class="qgx-step-label">Pages &amp; Marks</div>
+    </div>
+    <div class="qgx-step" id="stepItem3">
+        <div class="qgx-step-circle" id="stepCircle3">3</div>
+        <div class="qgx-step-label">Question Types</div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════ STEP 1 ═══════════════════════════════════ -->
+<div class="qgx-card" id="step1Card">
+    <div class="qgx-card-title">
+        <span class="qgx-step-tag">STEP 1</span>
+        <i class="fas fa-folder-open"></i>
+        Select Documents
+    </div>
+
+    <div class="qgx-filter-grid">
+        <div class="qgx-filter-item">
+            <label>Course <span class="qgx-req">*</span></label>
+            <select id="courseFilter">
+                <option value="">All Courses</option>
+                {% for item in courses %}
+                <option value="{{ item.id }}">{{ item.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="qgx-filter-item">
+            <label>Leg</label>
+            <select id="legFilter" disabled><option value="">Select Leg</option></select>
+            <div class="qgx-fstatus" id="legStatus"><i class="fas fa-lock"></i> Select course</div>
+        </div>
+        <div class="qgx-filter-item">
+            <label>Subject</label>
+            <select id="subjectFilter" disabled><option value="">Select Subject</option></select>
+            <div class="qgx-fstatus" id="subjectStatus"><i class="fas fa-lock"></i> Select leg</div>
+        </div>
+        <div class="qgx-filter-item">
+            <label>Chapter</label>
+            <select id="chapterFilter" disabled><option value="">Select Chapter</option></select>
+            <div class="qgx-fstatus" id="chapterStatus"><i class="fas fa-lock"></i> Select subject</div>
+        </div>
+        <div class="qgx-filter-item">
+            <label>Topic</label>
+            <select id="topicFilter" disabled><option value="">Select Topic</option></select>
+            <div class="qgx-fstatus" id="topicStatus"><i class="fas fa-lock"></i> Select chapter</div>
+        </div>
+        <div class="qgx-filter-item">
+            <label>Section</label>
+            <select id="sectionFilter" disabled><option value="">Select Section</option></select>
+            <div class="qgx-fstatus" id="sectionStatus"><i class="fas fa-lock"></i> Select topic</div>
+        </div>
+    </div>
+
+    <div class="qgx-doc-panel">
+        <div class="qgx-doc-panel-hdr">
+            <div class="qgx-doc-panel-title">
+                <i class="fas fa-file-pdf qgx-doc-icon-accent"></i>Available Documents
+            </div>
+            <!-- CHANGE 1: search bar + active keyword badge -->
+            <div class="qgx-searchbar-wrap">
+                <div class="qgx-searchbar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="keywordSearch" placeholder="Search by keywords..." maxlength="80">
+                </div>
+                <button class="qgx-btn-search" id="btnKeywordSearch">
+                    <i class="fas fa-search"></i> Search
+                </button>
+                <!-- Active keyword pill shown once a search is applied -->
+                <div class="qgx-keyword-active" id="kwActivePill">
+                    <i class="fas fa-tag"></i>
+                    <span id="kwActiveTxt"></span>
+                    <button id="btnClearKeyword" title="Clear keyword filter">✕</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="qgx-doc-list" id="docList">
+            <div class="qgx-doc-empty">
+                <i class="fas fa-filter"></i>
+                Select a Course above to view available documents
+            </div>
+        </div>
+
+        <div class="qgx-sel-bar hidden" id="selectedBar">
+            <span><i class="fas fa-check-circle me-1"></i><span id="selCount">0</span> document(s) selected</span>
+            <button class="qgx-btn-clear-sel" id="btnClearSel"><i class="fas fa-times me-1"></i>Clear Selection</button>
+        </div>
+
+        <div class="qgx-val-msg" id="step1Val"><i class="fas fa-exclamation-circle"></i> <span id="step1ValMsg"></span></div>
+
+        <div class="qgx-nav-row">
+            <div></div>
+            <button class="qgx-btn-nav primary" id="btnStep1Next" disabled>
+                Next: Pages &amp; Marks <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════ STEP 2 ═══════════════════════════════════ -->
+<div class="qgx-card bcd" id="step2Card">
+    <div class="qgx-card-title">
+        <span class="qgx-step-tag">STEP 2</span>
+        <i class="fas fa-sliders-h"></i>
+        Page Numbers, Marks &amp; Difficulty
+    </div>
+
+    <div class="qgx-pages-grid">
+        <!-- Left col: document page ranges -->
+        <div>
+            <div class="qgx-pages-col-label">
+                <i class="fas fa-file-alt abcd"></i>Specify Page Numbers (optional)
+            </div>
+            <div class="qgx-sdoc-list" id="selectedDocsList" style="display:grid;grid-template-columns:repeat(2,1fr);"></div>
+        </div>
+
+        <!-- Right col: marks + CHANGE 3 difficulty -->
+        <div class="qgx-right-col">
+
+            <!-- CHANGE 3: Difficulty selector -->
+            <div class="qgx-difficulty-box">
+                <div class="qgx-pages-col-label">
+                    <i class="fas fa-signal abcde"></i>Difficulty Level
+                </div>
+                <div class="qgx-diff-options">
+                    <button class="qgx-diff-btn" data-diff="easy" id="diffEasy">
+                        <span class="qgx-diff-icons">🟢</span>Easy
+                    </button>
+                    <button class="qgx-diff-btn active-medium" data-diff="medium" id="diffMedium">
+                        <span class="qgx-diff-icons">🟡</span>Medium
+                    </button>
+                    <button class="qgx-diff-btn" data-diff="hard" id="diffHard">
+                        <span class="qgx-diff-icons">🔴</span>Hard
+                    </button>
+                </div>
+                <div class="qgx-diff-hint" id="diffHint">
+                    Medium — application &amp; comprehension questions
+                </div>
+                <input type="hidden" id="difficultyValue" value="medium">
+            </div>
+
+            <!-- Marks slider -->
+            <div>
+                <div class="qgx-pages-col-label">
+                    <i class="fas fa-star abcde"></i>Total Paper Marks
+                </div>
+                <div class="qgx-marks-box">
+                    <div class="qgx-marks-top-row">
+                        <div>
+                            <div class="qgx-marks-val" id="marksDisplay">50</div>
+                            <div class="qgx-marks-lbl">Total Marks</div>
+                        </div>
+                        <div class="qgx-marks-range-hint">
+                            <div>Range: 1 – 100</div>
+                            <div>Drag slider to set</div>
+                        </div>
+                    </div>
+                    <input type="range" class="qgx-marks-slider" id="marksSlider" min="1" max="100" value="50" step="1">
+                    <div class="qgx-marks-ticks">
+                        <span>1</span><span>25</span><span>50</span><span>75</span><span>100</span>
+                    </div>
+                    <div class="qgx-divider"></div>
+                    <div class="qgx-marks-manual-row">
+                        <div class="qgx-marks-manual-label">Or enter manually:</div>
+                        <input type="number" id="marksInput" min="1" max="100" value="50" class="qgx-marks-manual-input">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="qgx-val-msg" id="step2Val"><i class="fas fa-exclamation-circle"></i> <span id="step2ValMsg"></span></div>
+
+    <div class="qgx-nav-row">
+        <button class="qgx-btn-nav" id="btnStep2Back"><i class="fas fa-arrow-left"></i> Back</button>
+        <button class="qgx-btn-nav primary" id="btnStep2Next">Next: Question Types <i class="fas fa-arrow-right"></i></button>
+    </div>
+</div>
+
+<!-- ═══════════════════════════ STEP 3 ═══════════════════════════════════ -->
+<div class="qgx-card bcd" id="step3Card">
+    <div class="qgx-card-title">
+        <span class="qgx-step-tag">STEP 3</span>
+        <i class="fas fa-list-alt"></i>
+        Select Question Types
+        <span class="qgx-step3-sub">At least one required</span>
+    </div>
+
+    <div class="qgx-qtype-grid">
+        <div class="qgx-qtype-card" data-type="mcq">
+            <div class="qgx-qtype-hdr">
+                <div class="qgx-qtype-toggle"><i class="fas fa-check"></i></div>
+                <div class="qgx-qtype-icon mcq"><i class="fas fa-list-ol"></i></div>
+                <div class="qgx-qtype-name">Multiple Choice (MCQ)</div>
+            </div>
+            <div class="qgx-count-row">
+                <label>Questions:</label>
+                <div class="qgx-count-ctrl">
+                    <button type="button" data-delta="-1">−</button>
+                    <input type="number" class="qgx-num" value="1" min="1" max="100">
+                    <button type="button" data-delta="1">+</button>
+                </div>
+            </div>
+            <div class="qgx-qtype-desc">4 options per question, single correct answer</div>
+        </div>
+
+        <div class="qgx-qtype-card" data-type="tf">
+            <div class="qgx-qtype-hdr">
+                <div class="qgx-qtype-toggle"><i class="fas fa-check"></i></div>
+                <div class="qgx-qtype-icon tf"><i class="fas fa-check-circle"></i></div>
+                <div class="qgx-qtype-name">True / False</div>
+            </div>
+            <div class="qgx-count-row">
+                <label>Questions:</label>
+                <div class="qgx-count-ctrl">
+                    <button type="button" data-delta="-1">−</button>
+                    <input type="number" class="qgx-num" value="1" min="1" max="100">
+                    <button type="button" data-delta="1">+</button>
+                </div>
+            </div>
+            <div class="qgx-qtype-desc">Simple true or false statements</div>
+        </div>
+
+        <div class="qgx-qtype-card" data-type="fitb">
+            <div class="qgx-qtype-hdr">
+                <div class="qgx-qtype-toggle"><i class="fas fa-check"></i></div>
+                <div class="qgx-qtype-icon fitb"><i class="fas fa-pencil-alt"></i></div>
+                <div class="qgx-qtype-name">Fill in the Blanks</div>
+            </div>
+            <div class="qgx-count-row">
+                <label>Questions:</label>
+                <div class="qgx-count-ctrl">
+                    <button type="button" data-delta="-1">−</button>
+                    <input type="number" class="qgx-num" value="1" min="1" max="100">
+                    <button type="button" data-delta="1">+</button>
+                </div>
+            </div>
+            <div class="qgx-qtype-desc">Complete the sentence with missing words</div>
+        </div>
+
+        <div class="qgx-qtype-card" data-type="sa">
+            <div class="qgx-qtype-hdr">
+                <div class="qgx-qtype-toggle"><i class="fas fa-check"></i></div>
+                <div class="qgx-qtype-icon sa"><i class="fas fa-comment-dots"></i></div>
+                <div class="qgx-qtype-name">Short Answer</div>
+            </div>
+            <div class="qgx-count-row">
+                <label>Questions:</label>
+                <div class="qgx-count-ctrl">
+                    <button type="button" data-delta="-1">−</button>
+                    <input type="number" class="qgx-num" value="1" min="1" max="100">
+                    <button type="button" data-delta="1">+</button>
+                </div>
+            </div>
+            <div class="qgx-qtype-desc">2–4 sentence answer expected</div>
+        </div>
+
+        <div class="qgx-qtype-card" data-type="desc">
+            <div class="qgx-qtype-hdr">
+                <div class="qgx-qtype-toggle"><i class="fas fa-check"></i></div>
+                <div class="qgx-qtype-icon desc"><i class="fas fa-file-alt"></i></div>
+                <div class="qgx-qtype-name">Descriptive</div>
+            </div>
+            <div class="qgx-count-row">
+                <label>Questions:</label>
+                <div class="qgx-count-ctrl">
+                    <button type="button" data-delta="-1">−</button>
+                    <input type="number" class="qgx-num" value="1" min="1" max="100">
+                    <button type="button" data-delta="1">+</button>
+                </div>
+            </div>
+            <div class="qgx-qtype-desc">Long-form, detailed response required</div>
+        </div>
+    </div>
+    <!-- Topic Focus input — separate from document search -->
+    <div class="qgx-topic-focus-row" style="margin-top:16px;padding:14px 16px;background:#fafbfd;border:1.5px solid var(--border);border-radius:var(--radius-sm);">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <i class="fas fa-crosshairs" style="color:var(--accent);font-size:0.85rem;"></i>
+            <span style="font-size:0.82rem;font-weight:700;color:var(--text-mid);">Topic Focus</span>
+            <span style="font-size:0.68rem;color:var(--text-soft);font-weight:400;">(optional)</span>
+        </div>
+        <div style="position:relative;">
+            <input type="text" id="topicKeywordInput" maxlength="80"
+                placeholder="e.g. Newton's laws, photosynthesis, French Revolution..."
+                style="width:100%;padding:9px 12px 9px 34px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:0.83rem;background:#fff;transition:var(--transition);">
+            <i class="fas fa-tag" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-soft);font-size:0.75rem;pointer-events:none;"></i>
+        </div>
+        <div style="font-size:0.68rem;color:var(--text-soft);margin-top:5px;padding-left:2px;">
+            AI will focus maximum questions on this specific topic from your selected documents.
+        </div>
+    </div>
+    <div class="qgx-val-msg" id="step3Val"><i class="fas fa-exclamation-circle"></i> <span id="step3ValMsg"></span></div>
+
+    <div class="qgx-nav-row">
+        <button class="qgx-btn-nav" id="btnStep3Back"><i class="fas fa-arrow-left"></i> Back</button>
+        <button class="qgx-btn-generate" id="btnGenerate" disabled>
+            <i class="fas fa-magic"></i> Generate Questions
+        </button>
+    </div>
+</div>
+
+<!-- ═══════════════════════════ RESULTS ══════════════════════════════════ -->
+<div class="qgx-card bcd" id="resultsCard">
+    <div class="qgx-card-title">
+        <span class="qgx-step-tag">RESULTS</span>
+        <i class="fas fa-check-circle acd"></i>
+        Generated Questions
+    </div>
+
+    <div class="qgx-results-hdr">
+        <div>
+            <div class="qgx-results-count-val"><span id="resultCount">0</span></div>
+            <div class="qgx-results-count-lbl">Questions Generated</div>
+        </div>
+        <div class="qgx-results-meta-group">
+            <div class="qgx-results-meta-item">
+                <div class="qgx-results-meta-label">Total Marks</div>
+                <div class="qgx-results-meta-val"><span id="resultMarks">50</span></div>
+            </div>
+            <div class="qgx-results-meta-item">
+                <div class="qgx-results-meta-label">Documents</div>
+                <div class="qgx-results-meta-val"><span id="resultDocs">1</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="qgx-marks-total-bar" id="marksTotalBar">
+        <div class="qgx-mbar-left">
+            <i class="fas fa-star qgx-mbar-star"></i>
+            <span class="qgx-mbar-label">Marks assigned:</span>
+            <span class="qgx-mbar-used" id="mbarUsed">0</span>
+            <span class="qgx-mbar-sep">/</span>
+            <span class="qgx-mbar-total" id="mbarTotal">50</span>
+        </div>
+        <span class="qgx-mbar-status under" id="mbarStatus">0 marks remaining</span>
+    </div>
+
+    <div class="qgx-filter-bar">
+        <div class="qgx-filter-bar-inner" id="filterBarInner">
+            <div class="qgx-filter-bar-label">Filter by type:</div>
+        </div>
+    </div>
+
+    <div class="qgx-table-wrap">
+        <table class="qgx-table" id="resultsTable">
+            <thead>
+                <tr>
+                    <th class="acde">No.</th>
+                    <th class="acdf">Question</th>
+                    <th class="acdg">Options / Answer</th>
+                    <th class="acdh">Type</th>
+                    <th class="acdi">Marks</th>
+                    <th class="acdj">Correct Answer</th>
+                    <th class="acdk">Source</th>
+                    <th class="acdl">Action</th>
+                </tr>
+            </thead>
+            <tbody id="resultsTableBody"></tbody>
+        </table>
+        <div class="qgx-tbl-empty bcd" id="resultsEmpty">
+            <i class="fas fa-inbox"></i>
+            <p>No questions match this filter</p>
+        </div>
+    </div>
+
+    <div class="qgx-stats-grid">
+        <div class="qgx-stat-box">
+            <div class="qgx-stat-hdr"><i class="fas fa-chart-pie"></i> Questions Breakdown</div>
+            <div class="qgx-stat-breakdown" id="statsBreakdown"></div>
+        </div>
+        <div class="qgx-stat-box">
+            <div class="qgx-stat-hdr"><i class="fas fa-star"></i> Marks Distribution</div>
+            <div id="marksBreakdown" class="qgx-marks-bk-list"></div>
+        </div>
+    </div>
+
+    <div class="qgx-section">
+        <div class="qgx-section-hdr"><i class="fas fa-file-pdf"></i><h3>Generate Question Paper PDF</h3></div>
+        <div class="qgx-gen-controls">
+            <div class="qgx-ctrl-group">
+                <label for="paperTitle">Paper Title:</label>
+                <input type="text" id="paperTitle" placeholder="e.g., Mathematics Final Exam - 2024">
+            </div>
+            <div class="qgx-ctrl-row">
+                <div class="qgx-ctrl-group">
+                    <label for="paperDuration">Duration (minutes):</label>
+                    <input type="number" id="paperDuration" min="30" max="480" value="120">
+                </div>
+                <div class="qgx-ctrl-group">
+                    <label for="paperSchool">School / Institute (optional):</label>
+                    <input type="text" id="paperSchool" placeholder="e.g. Sawal Academy">
+                </div>
+                <div class="qgx-ctrl-group">
+                    <label>Options:</label>
+                    <div class="qgx-chk-group acdM">
+                        <label><input type="checkbox" id="includeAnswers" checked> Include Answer Key</label>
+                        <label><input type="checkbox" id="separateAnswers"> Separate Answer Sheet</label>
+                        <label><input type="checkbox" id="includeMarks"> Show Marks Distribution</label>
+                    </div>
+                </div>
+                <div class="qgx-ctrl-group">
+                    <label for="paperInstructions" style="display:flex;align-items:center;gap:6px;">
+                        <i class="fas fa-list-ul" style="color:var(--brand);font-size:0.78rem;"></i>
+                        Instructions
+                        <span style="color:var(--text-soft);font-weight:400;font-size:0.7rem;">(optional — one per line)</span>
+                    </label>
+                    <div style="position:relative;">
+                        <textarea id="paperInstructions"
+                            placeholder="Write answers clearly and neatly.&#10;All questions are compulsory.&#10;Show all working for calculation questions."
+                            rows="4"
+                            style="width:100%;padding-left:36px;resize:vertical;min-height:90px;font-size:0.82rem;line-height:1.65;"></textarea>
+                        <i class="fas fa-pen-to-square" style="position:absolute;left:11px;top:11px;color:var(--text-soft);font-size:0.76rem;pointer-events:none;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="qgx-pdf-actions">
+            <button class="qgx-btn-nav primary" id="btnGeneratePDF">
+                <i class="fas fa-file-pdf"></i> Generate PDF
+            </button>
+        </div>
+
+        <div style="margin-top: 14px; padding-top: 14px; border-top: 1.5px solid var(--border);">
+            <div style="font-size:0.78rem; font-weight:700; color:var(--text-mid); margin-bottom:10px;">
+                <i class="fas fa-download" style="margin-right:5px; color:var(--brand);"></i>
+                Download Questions As
+            </div>
+            <div class="qgx-export-row">
+                <button class="qgx-btn-export txt" id="btnExportText" >
+                    <i class="fas fa-file-alt"></i> Text (.txt)
+                </button>
+                <button class="qgx-btn-export xlsx" id="btnExportExcel" >
+                    <i class="fas fa-file-excel"></i> Excel (.xlsx)
+                </button>
+                <button class="qgx-btn-export docx" id="btnExportWord" >
+                    <i class="fas fa-file-word"></i> Word (.docx)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="qgx-section">
+        <div class="qgx-section-hdr"><i class="fas fa-save"></i><h3>Save to Database</h3></div>
+        <div class="qgx-save-row">
+            <div class="qgx-save-desc">Saves all questions, answers, marks, question types, and source documents automatically.</div>
+            <button class="qgx-btn-save" id="btnSaveBank"><i class="fas fa-database"></i> Save Questions</button>
+        </div>
+        <div class="qgx-val-msg acdN" id="saveMsg"></div>
+    </div>
+
+    <div class="qgx-nav-row">
+        <button class="qgx-btn-nav primary" id="btnResultsBack"><i class="fas fa-arrow-left"></i> Back to Setup</button>
+    </div>
+</div>
+
+<!-- Edit modal (unchanged) -->
+<div class="qgx-modal-overlay" id="editModal">
+    <div class="qgx-modal-box">
+        <div class="qgx-modal-hdr">
+            <h3><i class="fas fa-edit"></i> Edit Question</h3>
+            <button class="qgx-modal-close" id="btnModalClose"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="qgx-modal-body">
+            <input type="hidden" id="editQIdx">
+            <input type="hidden" id="editQType">
+            <div class="qgx-modal-field">
+                <label>Question Text <span class="acdO">*</span></label>
+                <textarea id="editQText" rows="3" placeholder="Enter question..."></textarea>
+            </div>
+            <div class="qgx-modal-field" id="editOptionsWrap">
+                <label>Options (for MCQ / Fill in the Blanks)</label>
+                <div class="qgx-opts-grid">
+                    <div class="qgx-opt-field"><div class="qgx-opt-lbl">A</div><input type="text" id="editOptA" placeholder="Option A"></div>
+                    <div class="qgx-opt-field"><div class="qgx-opt-lbl">B</div><input type="text" id="editOptB" placeholder="Option B"></div>
+                    <div class="qgx-opt-field"><div class="qgx-opt-lbl">C</div><input type="text" id="editOptC" placeholder="Option C"></div>
+                    <div class="qgx-opt-field"><div class="qgx-opt-lbl">D</div><input type="text" id="editOptD" placeholder="Option D"></div>
+                </div>
+            </div>
+            <div class="qgx-modal-field" id="editAnswerFieldWrap">
+                <label>Correct Answer <span class="acdp">*</span></label>
+                <input type="text" id="editCorrectAnswerInput" placeholder="e.g. A  /  True  /  photosynthesis">
+                <textarea id="editCorrectAnswerTextarea" rows="4" placeholder="Enter detailed answer..." style="display:none;"></textarea>
+            </div>
+            <div class="qgx-modal-field qgx-marks-req-max">
+                <label>Marks for this question</label>
+                <input type="number" id="editMarks" min="1" max="100" value="1">
+            </div>
+        </div>
+        <div class="qgx-modal-footer">
+            <button class="qgx-btn-nav" id="btnModalCancel">Cancel</button>
+            <button class="qgx-btn-nav primary" id="btnModalSave"><i class="fas fa-save"></i> Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<div class="qgx-summary" id="summaryStrip">
+    <div class="qgx-sum-items">
+        <div class="qgx-sum-item">
+            <div class="qgx-sum-dot filled" id="sum-dot-docs"></div>
+            <span class="qgx-sum-label">Docs:</span><span class="qgx-sum-val" id="sumDocs">—</span>
+        </div>
+        <div class="qgx-sum-item">
+            <div class="qgx-sum-dot" id="sum-dot-marks"></div>
+            <span class="qgx-sum-label">Marks:</span><span class="qgx-sum-val" id="sumMarks">—</span>
+        </div>
+        <div class="qgx-sum-item">
+            <div class="qgx-sum-dot" id="sum-dot-qtypes"></div>
+            <span class="qgx-sum-label">Types:</span><span class="qgx-sum-val" id="sumQtypes">—</span>
+        </div>
+        <div class="qgx-sum-item">
+            <div class="qgx-sum-dot filled" id="sum-dot-diff"></div>
+            <span class="qgx-sum-label">Difficulty:</span><span class="qgx-sum-val" id="sumDiff">Medium</span>
+        </div>
+    </div>
+</div>
+<div class="qgx-modal-overlay" id="dupCheckModal" style="z-index:10002;">
+    <div class="qgx-modal-box" style="max-width:520px;">
+        <div class="qgx-modal-hdr" style="border-bottom:2px solid var(--border);">
+            <h3 style="gap:10px;display:flex;align-items:center;">
+                <span style="width:32px;height:32px;background:rgba(245,158,11,0.12);border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-exclamation-triangle" style="color:#d97706;font-size:0.9rem;"></i>
+                </span>
+                Questions Already Generated
+            </h3>
+            <button class="qgx-modal-close" id="dupModalClose"><i class="fas fa-times"></i></button>
+        </div>
+ 
+        <div class="qgx-modal-body" style="gap:16px;">
+            <!-- Summary line -->
+            <div style="background:rgba(245,158,11,0.07);border:1.5px solid rgba(245,158,11,0.25);border-radius:var(--radius-sm);padding:12px 16px;display:flex;align-items:flex-start;gap:12px;">
+                <i class="fas fa-database" style="color:#d97706;font-size:1.1rem;margin-top:2px;flex-shrink:0;"></i>
+                <div>
+                    <div style="font-size:0.85rem;font-weight:700;color:#92400e;" id="dupSummaryText">
+                        You have already generated questions from this document.
+                    </div>
+                    <div style="font-size:0.75rem;color:#b45309;margin-top:3px;" id="dupCountText">
+                        <!-- filled by JS -->
+                    </div>
+                </div>
+            </div>
+ 
+            <!-- Document chips -->
+            <div>
+                <div style="font-size:0.72rem;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;">
+                    <i class="fas fa-file-pdf" style="color:var(--accent);margin-right:4px;"></i>Matched Documents
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;" id="dupDocChips">
+                    <!-- chips injected by JS -->
+                </div>
+            </div>
+ 
+            <!-- Action description -->
+            <div style="font-size:0.82rem;color:var(--text-mid);line-height:1.65;border-top:1.5px solid var(--border);padding-top:14px;">
+                What would you like to do?
+            </div>
+ 
+            <!-- Two action cards -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+ 
+                <!-- See generated -->
+                <div id="dupBtnSeeOld"
+                     style="border:2px solid var(--brand);border-radius:var(--radius-sm);padding:16px 14px;cursor:pointer;transition:var(--transition);background:var(--brand-light);text-align:center;"
+                     onmouseover="this.style.background='#dce8f8'"
+                     onmouseout="this.style.background='var(--brand-light)'">
+                    <div style="width:36px;height:36px;background:var(--brand);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;">
+                        <i class="fas fa-eye" style="color:#fff;font-size:0.85rem;"></i>
+                    </div>
+                    <div style="font-size:0.82rem;font-weight:700;color:var(--brand);">See Generated</div>
+                    <div style="font-size:0.68rem;color:var(--text-soft);margin-top:4px;line-height:1.45;">
+                        Go to Question Bank Explorer filtered by these documents
+                    </div>
+                </div>
+ 
+                <!-- Generate more -->
+                <div id="dupBtnGenMore"
+                     style="border:2px solid var(--accent);border-radius:var(--radius-sm);padding:16px 14px;cursor:pointer;transition:var(--transition);background:var(--accent-light);text-align:center;"
+                     onmouseover="this.style.background='#ffe4de'"
+                     onmouseout="this.style.background='var(--accent-light)'">
+                    <div style="width:36px;height:36px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;">
+                        <i class="fas fa-plus" style="color:#fff;font-size:0.85rem;"></i>
+                    </div>
+                    <div style="font-size:0.82rem;font-weight:700;color:#b84030;">Continue Generation</div>
+                    <div style="font-size:0.68rem;color:var(--text-soft);margin-top:4px;line-height:1.45;">
+                        Continue and generate new questions anyway
+                    </div>
+                </div>
+ 
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+
+// ── Enable export buttons when questions exist ───────────────────────────────
+function updateExportButtons() {
+    var hasQ = state.generatedQuestions && state.generatedQuestions.length > 0;
+    ['btnExportText', 'btnExportExcel', 'btnExportWord'].forEach(function(id) {
+        var btn = document.getElementById(id);
+        if (btn) btn.disabled = !hasQ;
+    });
+}
+
+// ── Core export function ─────────────────────────────────────────────────────
+function doExport(fileType) {
+    if (!state.generatedQuestions || state.generatedQuestions.length === 0) {
+        alert('No questions to export. Please generate questions first.');
+        return;
+    }
+
+    var paperTitle = (document.getElementById('paperTitle').value || 'Questions').trim();
+    var payload = {
+        questions:   state.generatedQuestions,
+        total_marks: state.totalMarks,
+        paper_title: paperTitle
+    };
+
+    var btn = document.getElementById(
+        fileType === 'text'  ? 'btnExportText'  :
+        fileType === 'excel' ? 'btnExportExcel' : 'btnExportWord'
+    );
+    var origHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
+
+    var url = URLS.exportQuestions.replace('FILETYPE', fileType);
+
+    fetch(url, {
+        method:  'POST',
+        headers: {
+            'Content-Type':  'application/json',
+            'X-CSRFToken':   getCsrfToken()
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(function(response) {
+        if (!response.ok) {
+            return response.json().then(function(d) { throw new Error(d.error || 'Export failed'); });
+        }
+        return response.blob();
+    })
+    .then(function(blob) {
+        // derive filename from Content-Disposition or fallback
+        var ext = fileType === 'text' ? '.txt' : fileType === 'excel' ? '.xlsx' : '.docx';
+        var fname = (paperTitle.replace(/\s+/g, '_').substring(0, 40) || 'questions') + ext;
+
+        var url = URL.createObjectURL(blob);
+        var a   = document.createElement('a');
+        a.href     = url;
+        a.download = fname;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    })
+    .catch(function(err) {
+        alert('Export failed: ' + err.message);
+    })
+    .finally(function() {
+        btn.disabled  = false;
+        btn.innerHTML = origHTML;
+    });
+}
+document.getElementById('btnExportText').addEventListener('click',  function() { doExport('text');  });
+document.getElementById('btnExportExcel').addEventListener('click', function() { doExport('excel'); });
+document.getElementById('btnExportWord').addEventListener('click',  function() { doExport('word');  });
+
+
+
+// ─── helpers ────────────────────────────────────────────────────────────────
+function getCsrfToken() {
+    var name = 'csrftoken', value = null;
+    document.cookie.split(';').forEach(function(c) {
+        var parts = c.trim().split('=');
+        if (parts[0] === name) value = decodeURIComponent(parts[1]);
+    });
+    if (!value) { var inp = document.querySelector('[name=csrfmiddlewaretoken]'); if (inp) value = inp.value; }
+    return value || '';
+}
+
+var URLS = {
+    exportQuestions:   "{% url 'question_generation:export_questions' 'FILETYPE' %}",  // ← ADD THIS
+    getLegs:           "{% url 'question_generation:ajax_get_legs' %}",
+    getSubjects:       "{% url 'question_generation:ajax_get_subjects' %}",
+    getChapters:       "{% url 'question_generation:ajax_get_chapters' %}",
+    getTopics:         "{% url 'question_generation:ajax_get_topics' %}",
+    getSections:       "{% url 'question_generation:ajax_get_sections' %}",
+    getHierarchyData:  "{% url 'question_generation:ajax_get_hierarchy_data' %}",
+    searchDocuments:   "{% url 'question_generation:ajax_search_documents' %}",
+    generateQuestions: "{% url 'question_generation:generate_questions' %}",
+    generatePDF:       "{% url 'question_generation:generate_paper_pdf' %}",
+    saveBank:          "{% url 'question_generation:save_question_bank' %}",
+    checkDocumentQuestions: "{% url 'question_generation:check_document_questions' %}",
+    explorerUrl:            "{% url 'question_generation:question_bank_explorer' %}"
+};
+
+var state = {
+    allDocs: [],
+    selectedDocs: [],
+    currentStep: 1,
+    generatedQuestions: [],
+    totalMarks: 50,
+    activeKeyword: '',        // CHANGE 1: track the applied keyword
+    difficulty: 'medium'      // CHANGE 3: track selected difficulty
+};
+
+var el = {
+    course:         document.getElementById('courseFilter'),
+    leg:            document.getElementById('legFilter'),
+    subject:        document.getElementById('subjectFilter'),
+    chapter:        document.getElementById('chapterFilter'),
+    topic:          document.getElementById('topicFilter'),
+    section:        document.getElementById('sectionFilter'),
+    docList:        document.getElementById('docList'),
+    keyword:        document.getElementById('keywordSearch'),
+    btnSearch:      document.getElementById('btnKeywordSearch'),
+    kwActivePill:   document.getElementById('kwActivePill'),
+    kwActiveTxt:    document.getElementById('kwActiveTxt'),
+    btnClearKw:     document.getElementById('btnClearKeyword'),
+    selBar:         document.getElementById('selectedBar'),
+    selCount:       document.getElementById('selCount'),
+    btnClear:       document.getElementById('btnClearSel'),
+    btnStep1Next:   document.getElementById('btnStep1Next'),
+    marksSlider:    document.getElementById('marksSlider'),
+    marksDisplay:   document.getElementById('marksDisplay'),
+    marksInput:     document.getElementById('marksInput'),
+    btnStep2Back:   document.getElementById('btnStep2Back'),
+    btnStep2Next:   document.getElementById('btnStep2Next'),
+    btnStep3Back:   document.getElementById('btnStep3Back'),
+    btnGenerate:    document.getElementById('btnGenerate'),
+    btnResultsBack: document.getElementById('btnResultsBack'),
+    summaryStrip:   document.getElementById('summaryStrip'),
+    selDocsList:    document.getElementById('selectedDocsList'),
+    loadingOverlay: document.getElementById('loadingOverlay'),
+    loadingText:    document.getElementById('loadingText'),
+    topicKeyword: document.getElementById('topicKeywordInput')
+
+};
+
+function fetchJSON(url, params) {
+    var qs = new URLSearchParams(params).toString();
+    return fetch(url + (qs ? '?' + qs : '')).then(function(r) { if (!r.ok) throw new Error('HTTP '+r.status); return r.json(); });
+}
+function postJSON(url, data) {
+    return fetch(url, { method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':getCsrfToken()}, body:JSON.stringify(data) }).then(function(r) { return r.json(); });
+}
+function escapeHtml(t) { if (!t) return ''; var d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
+function truncate(t, n) { if (!t) return ''; return t.length>n ? t.substring(0,n)+'...' : t; }
+function showLoading(msg) { el.loadingText.textContent=msg||'Loading...'; el.loadingOverlay.classList.add('show'); }
+function hideLoading()    { el.loadingOverlay.classList.remove('show'); }
+function showValMsg(id,type,msg) {
+    var vm=document.getElementById(id); if(!vm)return;
+    vm.className='qgx-val-msg '+type;
+    var span=vm.querySelector('span'); if(span) span.textContent=msg; else vm.textContent=msg;
+    setTimeout(function(){ vm.style.display='none'; vm.textContent=''; },5000);
+}
+function hideValMsg(id) { var vm=document.getElementById(id); if(vm) vm.className='qgx-val-msg'; }
+function updateSliderGradient(s) { var p=((s.value-s.min)/(s.max-s.min))*100; s.style.background='linear-gradient(to right,#1C4D8D '+p+'%,#e2e8f0 '+p+'%)'; }
+
+// ── CHANGE 1: unified document loader ────────────────────────────────────────
+// Calls the SAME endpoint for both hierarchy-only and keyword searches.
+// The endpoint now handles both at once.
+function loadDocuments() {
+    var params = {};
+    if (el.course.value)  params.course   = el.course.value;
+    if (el.leg.value)     params.leg      = el.leg.value;
+    if (el.subject.value) params.subject  = el.subject.value;
+    if (el.chapter.value) params.chapter  = el.chapter.value;
+    if (el.topic.value)   params.topic    = el.topic.value;
+    if (el.section.value) params.section  = el.section.value;
+    if (state.activeKeyword) params.keyword = state.activeKeyword;
+
+    el.docList.innerHTML = '<div class="qgx-doc-empty"><i class="fas fa-spinner fa-spin"></i> Loading documents...</div>';
+
+    var url = state.activeKeyword ? URLS.searchDocuments : URLS.getHierarchyData;
+    fetchJSON(url, params).then(function(result) {
+        renderDocList(result.data || []);
+    }).catch(function() {
+        el.docList.innerHTML = '<div class="qgx-doc-empty acdq"><i class="fas fa-exclamation-circle"></i> Error loading documents.</div>';
+    });
+}
+
+// ── CHANGE 1: keyword pill ────────────────────────────────────────────────────
+function applyKeyword() {
+    var kw = el.keyword.value.trim();
+    if (!kw) { clearKeyword(); return; }
+    state.activeKeyword = kw;
+    el.kwActiveTxt.textContent = '"' + kw + '"';
+    el.kwActivePill.classList.add('visible');
+    loadDocuments();
+}
+function clearKeyword() {
+    state.activeKeyword = '';
+    el.keyword.value = '';
+    el.kwActivePill.classList.remove('visible');
+    loadDocuments();
+}
+
+el.btnSearch.addEventListener('click', applyKeyword);
+el.keyword.addEventListener('keydown', function(e) { if (e.key === 'Enter') applyKeyword(); });
+el.btnClearKw.addEventListener('click', clearKeyword);
+
+// ── status helpers ────────────────────────────────────────────────────────────
+function updateStatus(type, status, count) {
+    var statusEl = document.getElementById(type+'Status'); if(!statusEl) return;
+    if (status==='loading')     { statusEl.className='qgx-fstatus loading'; statusEl.innerHTML='<i class="fas fa-spinner fa-spin"></i> Loading...'; }
+    else if (status==='ready')  { statusEl.className='qgx-fstatus ready';   statusEl.innerHTML='<i class="fas fa-check-circle"></i> '+(count||0)+' found'; }
+    else if (status==='locked') { statusEl.className='qgx-fstatus';          statusEl.innerHTML='<i class="fas fa-lock"></i> '+(count||''); }
+    else                        { statusEl.className='qgx-fstatus error';   statusEl.innerHTML='<i class="fas fa-exclamation-circle"></i> Error'; }
+}
+function populateDropdown(type, items) {
+    var select = el[type]; if(!select) return;
+    var label = type.charAt(0).toUpperCase()+type.slice(1);
+    select.innerHTML = '<option value="">All '+label+'s</option>';
+    items.forEach(function(item) { var opt=document.createElement('option'); opt.value=item.id; opt.textContent=item.name||item.title; select.appendChild(opt); });
+    select.disabled = false;
+}
+function resetDropdown(type, lockMsg) {
+    var select = el[type]; if(!select) return;
+    var label = type.charAt(0).toUpperCase()+type.slice(1);
+    select.innerHTML = '<option value="">Select '+label+'</option>';
+    select.disabled = true;
+    if (lockMsg) updateStatus(type,'locked',lockMsg);
+}
+function loadFilterOptions(type, url, params) {
+    updateStatus(type,'loading');
+    fetchJSON(url, params).then(function(result) {
+        var data = result.data||[];
+        populateDropdown(type, data);
+        updateStatus(type,'ready',data.length);
+    }).catch(function() { updateStatus(type,'error'); });
+}
+// Build hierarchy steps HTML for the floating card (same logic as hierarchy view)
+function avatarClassQG(role) {
+    if (!role || role === '-') return 'linear-gradient(135deg,#667eea,#764ba2)';
+    var r = role.toLowerCase();
+    if (r.includes('super'))    return 'linear-gradient(135deg,#f093fb,#f5576c)';
+    if (r.includes('admin'))    return 'linear-gradient(135deg,#4facfe,#00f2fe)';
+    if (r.includes('instruct')) return 'linear-gradient(135deg,#43e97b,#38f9d7)';
+    if (r.includes('student'))  return 'linear-gradient(135deg,#fa709a,#fee140)';
+    return 'linear-gradient(135deg,#667eea,#764ba2)';
+}
+function initialsQG(str) {
+    return (str || '?').split(' ').map(function(w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
+}
+function buildDocStepsHtml(doc) {
+    var steps = [
+        { label: 'Course',  icon: 'C',  cls: 'dhc-icon-course',  value: doc.course  || null },
+        { label: 'Leg',     icon: 'L',  cls: 'dhc-icon-leg',     value: (doc.leg    && doc.leg    !== '-') ? doc.leg    : null },
+        { label: 'Subject', icon: 'S',  cls: 'dhc-icon-subject', value: (doc.subject && doc.subject !== '-') ? doc.subject : null },
+        { label: 'Chapter', icon: 'Ch', cls: 'dhc-icon-chapter', value: (doc.chapter && doc.chapter !== '-') ? doc.chapter : null },
+        { label: 'Topic',   icon: 'T',  cls: 'dhc-icon-topic',   value: (doc.topic  && doc.topic  !== '-') ? doc.topic  : null },
+        { label: 'Section', icon: 'Se', cls: 'dhc-icon-section', value: (doc.section && doc.section !== '-') ? doc.section : null },
+    ].filter(function(s) { return s.value; });
+
+    var stepsHtml = steps.map(function(s, idx) {
+        var isLast = idx === steps.length - 1;
+        return '<div class="dhc-step' + (isLast ? ' active' : '') + '">'
+            + '<div class="dhc-icon-wrap ' + s.cls + '">' + s.icon + '</div>'
+            + '<div class="dhc-step-content">'
+            +   '<div class="dhc-step-label">' + escapeHtml(s.label) + '</div>'
+            +   '<div class="dhc-step-value">' + escapeHtml(s.value) + '</div>'
+            +   (isLast ? '<span class="dhc-level-badge"><i class="fas fa-map-marker-alt"></i> Uploaded here</span>' : '')
+            + '</div></div>';
+    }).join('');
+
+    var uploader = doc.uploaded_by || '-';
+    if (uploader !== '-') {
+        var fullName = doc.full_name || uploader;
+        var role     = doc.uploaded_by_role || '';
+        var bg       = avatarClassQG(role);
+        var init     = initialsQG(fullName);
+        stepsHtml +=
+            '<hr style="border:none;border-top:1px solid rgba(255,255,255,0.07);margin:8px 0 10px">' +
+            '<div style="font-size:0.75rem;color:#94a3b8;margin-bottom:4px;">Uploaded by</div>' +
+            '<div style="display:flex;align-items:center;gap:8px;">' +
+                '<span style="width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:0.62rem;font-weight:800;color:#fff;background:' + bg + ';">' + escapeHtml(init) + '</span>' +
+                '<div style="display:flex;flex-direction:column;gap:1px;">' +
+                    '<span style="font-size:0.76rem;font-weight:600;color:#e2e8f0;">' + escapeHtml(fullName) + '</span>' +
+                    (role ? '<span style="font-size:0.58rem;font-weight:700;padding:1px 5px;border-radius:20px;background:rgba(102,126,234,0.2);color:#a5b4fc;">' + escapeHtml(role) + '</span>' : '') +
+                '</div>' +
+            '</div>';
+    }
+    return stepsHtml;
+}
+function renderDocList(docs) {
+    state.allDocs = docs;
+    if (!docs || docs.length === 0) {
+        el.docList.innerHTML = '<div class="qgx-doc-empty"><i class="fas fa-search"></i>No documents found.</div>';
+        return;
+    }
+    var html = '';
+    docs.forEach(function(doc) {
+        var isSelected = state.selectedDocs.some(function(d) { return d.id === doc.id; });
+        var lvl = (doc.source_level || '').toLowerCase();
+
+        // Build hierarchy steps HTML (same logic as hierarchy view)
+        var stepsHtml = buildDocStepsHtml(doc);
+        var safeSteps = stepsHtml.replace(/"/g, '&quot;');
+
+        html += '<div class="qgx-doc-item' + (isSelected ? ' selected' : '') + '"'
+              + ' data-doc-id="' + doc.id + '"'
+              + ' data-doc-name="' + escapeHtml(doc.document_name).replace(/"/g, '&quot;') + '"'
+              + ' data-doc-level="' + escapeHtml(doc.source_level) + '">';
+        html += '<div class="qgx-doc-chk"><i class="fas fa-check"></i></div>';
+        html += '<div class="qgx-doc-info">';
+
+        // Wrap the name in a hover trigger (same pattern as hierarchy view)
+        html += '<div class="qgx-doc-name-trigger" data-steps-html="' + safeSteps + '" title="' + escapeHtml(doc.document_name) + '">';
+        html += '<i class="fas fa-file-pdf" style="color:#dc3545;margin-right:4px;font-size:0.8rem;"></i>';
+        html += escapeHtml(truncate(doc.document_name, 30));
+        html += '</div>';
+
+        html += '<div class="qgx-doc-meta"><span class="qgx-lvl-tag tag-' + lvl + '">' + escapeHtml(doc.source_level) + '</span>';
+        if (doc.subject) html += '<span>' + escapeHtml(doc.subject) + '</span>';
+        html += '</div></div></div>';
+    });
+    el.docList.innerHTML = html;
+}
+
+function toggleDocSelect(docItem) {
+    var docId=parseInt(docItem.dataset.docId), docName=docItem.dataset.docName, srcLevel=docItem.dataset.docLevel;
+    var idx = state.selectedDocs.findIndex(function(d) { return d.id===docId; });
+    if (idx>=0) { state.selectedDocs.splice(idx,1); docItem.classList.remove('selected'); }
+    else        { state.selectedDocs.push({id:docId,document_name:docName,source_level:srcLevel}); docItem.classList.add('selected'); }
+    updateSelectedBar();
+}
+function updateSelectedBar() {
+    var cnt = state.selectedDocs.length;
+    el.selCount.textContent = cnt;
+    if (cnt>0) { el.selBar.classList.remove('hidden'); el.btnStep1Next.disabled=false; }
+    else       { el.selBar.classList.add('hidden');    el.btnStep1Next.disabled=true; }
+    updateSummary();
+}
+
+// ── CHANGE 3: difficulty buttons ──────────────────────────────────────────────
+var diffHints = {
+    easy:   'Easy — basic recall &amp; straightforward facts',
+    medium: 'Medium — application &amp; comprehension questions',
+    hard:   'Hard — analysis, evaluation &amp; higher-order thinking'
+};
+document.querySelectorAll('.qgx-diff-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var d = this.getAttribute('data-diff');
+        state.difficulty = d;
+        document.getElementById('difficultyValue').value = d;
+        document.querySelectorAll('.qgx-diff-btn').forEach(function(b) {
+            b.className = 'qgx-diff-btn';
+        });
+        this.className = 'qgx-diff-btn active-' + d;
+        document.getElementById('diffHint').innerHTML = diffHints[d];
+        document.getElementById('sumDiff').textContent = d.charAt(0).toUpperCase()+d.slice(1);
+        updateSummary();
+    });
+});
+
+function setStep(n) {
+    state.currentStep = n;
+    document.getElementById('step1Card').style.display   = n===1 ? 'block' : 'none';
+    document.getElementById('step2Card').style.display   = n===2 ? 'block' : 'none';
+    document.getElementById('step3Card').style.display   = n===3 ? 'block' : 'none';
+    document.getElementById('resultsCard').style.display = n===4 ? 'block' : 'none';
+    for (var i=1; i<=3; i++) {
+        var item=document.getElementById('stepItem'+i), circle=document.getElementById('stepCircle'+i);
+        if (n===4) { item.className='qgx-step done'; circle.innerHTML='<i class="fas fa-check acdlr"></i>'; }
+        else { item.className='qgx-step'+(i<n?' done':i===n?' active':''); circle.innerHTML=i<n?'<i class="fas fa-check acdlr"></i>':String(i); }
+    }
+    if (n===4) el.summaryStrip.classList.remove('visible');
+    else       updateSummary();
+    window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── Step 2 page modal (unchanged logic) ──────────────────────────────────────
+function buildStep2Docs() {
+    if (!document.getElementById('pageModal')) {
+        document.body.insertAdjacentHTML('beforeend', `
+        <div class="qgx-page-modal-overlay" id="pageModal">
+            <div class="qgx-page-modal">
+                <div class="qgx-page-modal-hdr">
+                    <h4><i class="fas fa-bookmark"></i> Set Page Range</h4>
+                    <button class="qgx-page-modal-close" id="pageModalClose"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="qgx-page-modal-doc" id="pageModalDocName"></div>
+                <label>Page Numbers (optional)</label>
+                <input type="text" id="pageModalInput" placeholder="e.g. 1-5, 8, 10-12">
+                <div class="qgx-page-modal-hint">Leave blank to use all pages</div>
+                <div class="qgx-page-modal-footer">
+                    <button class="qgx-btn-nav" id="pageModalClear">Clear</button>
+                    <button class="qgx-btn-nav primary" id="pageModalDone"><i class="fas fa-check"></i> Done</button>
+                </div>
+            </div>
+        </div>`);
+        var overlay = document.getElementById('pageModal');
+        document.getElementById('pageModalClose').addEventListener('click', closePageModal);
+        document.getElementById('pageModalClear').addEventListener('click', function() { document.getElementById('pageModalInput').value=''; });
+        document.getElementById('pageModalDone').addEventListener('click', function() {
+            var docId=overlay.dataset.currentDocId, val=document.getElementById('pageModalInput').value.trim();
+            var hidden=document.getElementById('page-hidden-'+docId); if(hidden) hidden.value=val;
+            var pill=document.getElementById('pill-'+docId);
+            if(pill) { if(val){pill.classList.add('visible');pill.querySelector('span').textContent='pp. '+val;}else{pill.classList.remove('visible');} }
+            closePageModal();
+        });
+        overlay.addEventListener('click', function(e) { if(e.target===overlay) closePageModal(); });
+        document.addEventListener('keydown', function(e) { if(e.key==='Escape') closePageModal(); });
+    }
+    var html='';
+    state.selectedDocs.forEach(function(doc) {
+        html += '<div class="qgx-sdoc-row" data-build-doc="'+doc.id+'">'
+              + '<div class="qgx-sdoc-icon"><i class="fas fa-file-pdf"></i></div>'
+              + '<div class="qgx-sdoc-info"><div class="qgx-sdoc-name">'+escapeHtml(doc.document_name)+'</div><div class="qgx-sdoc-sub">'+escapeHtml(doc.source_level)+'</div></div>'
+              + '<div class="qgx-page-pill" id="pill-'+doc.id+'"><i class="fas fa-file"></i> <span></span></div>'
+              + '<span class="qgx-sdoc-edit-hint"><i class="fas fa-plus-circle" style="color:var(--brand);margin-right:3px;"></i>Pages</span>'
+              + '<input type="hidden" class="page-range-input" id="page-hidden-'+doc.id+'" data-doc-id="'+doc.id+'">'
+              + '</div>';
+    });
+    el.selDocsList.innerHTML = html;
+    el.selDocsList.addEventListener('click', function(e) {
+        var row=e.target.closest('.qgx-sdoc-row'); if(!row) return;
+        var docId=row.dataset.buildDoc, docName=row.querySelector('.qgx-sdoc-name').textContent;
+        openPageModal(docId, docName);
+    });
+}
+function openPageModal(docId, docName) {
+    var overlay=document.getElementById('pageModal');
+    overlay.dataset.currentDocId=docId;
+    document.getElementById('pageModalDocName').textContent=docName;
+    var hidden=document.getElementById('page-hidden-'+docId);
+    document.getElementById('pageModalInput').value=hidden?hidden.value:'';
+    overlay.classList.add('show');
+    setTimeout(function(){document.getElementById('pageModalInput').focus();},80);
+}
+function closePageModal() { var o=document.getElementById('pageModal'); if(o) o.classList.remove('show'); }
+
+function toggleQtype(card) { card.classList.toggle('active'); updateSummary(); }
+function changeCount(btn, delta) { var input=btn.parentElement.querySelector('input'); input.value=Math.max(1,Math.min(100,(parseInt(input.value)||0)+delta)); updateSummary(); }
+
+function updateSummary() {
+    var docCnt=state.selectedDocs.length, qTypes=[], qCount=0;
+    document.querySelectorAll('.qgx-qtype-card.active').forEach(function(card) {
+        var type=card.getAttribute('data-type'), count=parseInt(card.querySelector('.qgx-num').value)||0;
+        if(type&&count>0){qTypes.push(type.toUpperCase());qCount+=count;}
+    });
+    document.getElementById('sumDocs').textContent   = docCnt||'—';
+    document.getElementById('sumMarks').textContent  = state.totalMarks||'—';
+    document.getElementById('sumQtypes').textContent = qTypes.length?qTypes.join(', '):'—';
+    document.getElementById('sumDiff').textContent   = state.difficulty.charAt(0).toUpperCase()+state.difficulty.slice(1);
+    document.getElementById('sum-dot-docs').className   = 'qgx-sum-dot'+(docCnt>0?' filled':'');
+    document.getElementById('sum-dot-marks').className  = 'qgx-sum-dot'+(state.totalMarks>0?' filled':'');
+    document.getElementById('sum-dot-qtypes').className = 'qgx-sum-dot'+(qCount>0?' filled':'');
+    if(docCnt>0||qCount>0) el.summaryStrip.classList.add('visible');
+    else                   el.summaryStrip.classList.remove('visible');
+    var canGenerate=(state.currentStep===3)&&(docCnt>0)&&(qCount>0);
+    el.btnGenerate.disabled=!canGenerate;
+    var s3v=document.getElementById('step3Val');
+    if(state.currentStep===3&&qCount===0){document.getElementById('step3ValMsg').textContent='Please select at least one question type.';s3v.className='qgx-val-msg error';}
+    else{s3v.className='qgx-val-msg';}
+}
+
+function getTotalAssignedMarks() { return state.generatedQuestions.reduce(function(s,q){return s+(parseInt(q.marks)||1);},0); }
+function updateMarksTotalBar() {
+    var used=getTotalAssignedMarks(), target=state.totalMarks;
+    document.getElementById('mbarUsed').textContent=used;
+    document.getElementById('mbarTotal').textContent=target;
+    var statusEl=document.getElementById('mbarStatus'), diff=target-used;
+    if(diff===0)    {statusEl.className='qgx-mbar-status match';statusEl.textContent='✓ Marks match!';}
+    else if(diff>0) {statusEl.className='qgx-mbar-status under';statusEl.textContent=diff+' marks remaining';}
+    else            {statusEl.className='qgx-mbar-status over'; statusEl.textContent=Math.abs(diff)+' marks over limit';}
+    document.getElementById('resultCount').textContent=state.generatedQuestions.length;
+    renderStats(state.generatedQuestions,null);
+}
+function onMarksChange(qidx,val) { var q=state.generatedQuestions[qidx]; if(!q)return; q.marks=Math.max(1,Math.min(100,parseInt(val)||1)); updateMarksTotalBar(); }
+
+var currentFilter='all';
+function updateFilterBar(questions) {
+    var typeLabels={mcq:'MCQ',tf:'T/F',fitb:'FITB',sa:'Short Ans',desc:'Descriptive'};
+    var presentTypes=[], seen={};
+    questions.forEach(function(q){var t=(q.question_type||'').toLowerCase();if(t&&!seen[t]){seen[t]=true;presentTypes.push(t);}});
+    var inner=document.getElementById('filterBarInner');
+    var html='<div class="qgx-filter-bar-label">Filter by type:</div>';
+    html+='<button class="qgx-filter-btn'+(currentFilter==='all'?' active':'')+'" data-filter="all">All</button>';
+    presentTypes.forEach(function(t){ html+='<button class="qgx-filter-btn'+(currentFilter===t?' active':'')+'" data-filter="'+t+'">'+(typeLabels[t]||t.toUpperCase())+'</button>'; });
+    inner.innerHTML=html;
+    inner.querySelectorAll('.qgx-filter-btn').forEach(function(btn) {
+        btn.addEventListener('click',function(){
+            inner.querySelectorAll('.qgx-filter-btn').forEach(function(b){b.classList.remove('active');});
+            this.classList.add('active'); currentFilter=this.getAttribute('data-filter');
+            renderQuestionsTable(state.generatedQuestions,currentFilter);
+        });
+    });
+}
+
+function renderResults(data) {
+    var questions=data.questions||[], marks=data.total_marks||state.totalMarks, docCount=data.documents_processed||state.selectedDocs.length;
+    document.getElementById('resultCount').textContent=questions.length;
+    document.getElementById('resultMarks').textContent=marks;
+    document.getElementById('resultDocs').textContent=docCount;
+    document.getElementById('mbarTotal').textContent=marks;
+    currentFilter='all';
+    updateFilterBar(questions);
+    renderQuestionsTable(questions,'all');
+    renderStats(questions,data.marks_distribution);
+    updateMarksTotalBar();
+}
+
+var TYPE_ORDER=['mcq','fitb','tf','sa','desc'];
+var PARTITION_META={
+    mcq: {label:'Multiple Choice Questions',icon:'fa-list-ol'},
+    tf:  {label:'True / False',             icon:'fa-check-circle'},
+    fitb:{label:'Fill in the Blanks',       icon:'fa-pencil-alt'},
+    sa:  {label:'Short Answer',             icon:'fa-comment-dots'},
+    desc:{label:'Descriptive',              icon:'fa-file-alt'},
+};
+
+function renderQuestionsTable(questions, filter) {
+    var tbody=document.getElementById('resultsTableBody');
+    var typeBadgeMap={mcq:'MCQ',tf:'T/F',fitb:'FITB',sa:'Short',desc:'Desc'};
+    var TRUNCATE_LEN=60;
+    var filtered=filter==='all'?questions:questions.filter(function(q){var qt=(q.question_type||'').toLowerCase();return filter==='tf'?qt==='tf':qt===filter;});
+    if(filtered.length===0){tbody.innerHTML='';document.getElementById('resultsEmpty').style.display='block';updateMarksTotalBar();return;}
+    document.getElementById('resultsEmpty').style.display='none';
+    var html='';
+    if(filter==='all'){
+        var groups={},groupOrder=[];
+        filtered.forEach(function(q){var t=(q.question_type||'mcq').toLowerCase();if(!groups[t]){groups[t]=[];groupOrder.push(t);}groups[t].push(q);});
+        groupOrder.sort(function(a,b){var ia=TYPE_ORDER.indexOf(a),ib=TYPE_ORDER.indexOf(b);return(ia===-1?99:ia)-(ib===-1?99:ib);});
+        groupOrder.forEach(function(qtype){
+            var qs=groups[qtype],meta=PARTITION_META[qtype]||{label:qtype.toUpperCase(),icon:'fa-question'};
+            html+='<tr class="qgx-type-partition"><td colspan="8" style="padding:0;"><div class="qgx-partition-banner pb-'+qtype+'"><div class="pb-icon"><i class="fas '+meta.icon+'"></i></div><span class="pb-label">'+meta.label+'</span><span class="pb-count">'+qs.length+' question'+(qs.length!==1?'s':'')+'</span></div></td></tr>';
+            qs.forEach(function(q){html+=buildQuestionRow(q,questions,typeBadgeMap,TRUNCATE_LEN);});
+        });
+    }else{filtered.forEach(function(q){html+=buildQuestionRow(q,questions,typeBadgeMap,TRUNCATE_LEN);});}
+    tbody.innerHTML=html;
+    updateMarksTotalBar();
+}
+
+// AFTER (fixed)
+function buildSourceHtml(q) {
+    var sourceDocs = [];
+    if (Array.isArray(q.source_docs)) {
+        sourceDocs = q.source_docs;
+    } else if (q.source_docs && typeof q.source_docs === 'string') {
+        sourceDocs = [q.source_docs];
+    } else if (q.document_name) {
+        sourceDocs = [q.document_name];
+    }
+
+    if (!sourceDocs.length) return '<span style="color:var(--text-soft)">—</span>';
+
+    var primary = sourceDocs[0];
+    var html = '<div class="qgx-source-cell"><span class="qgx-source-primary" title="' + escapeHtml(primary) + '">' + escapeHtml(truncate(primary, 12)) + '</span>';
+    if (sourceDocs.length > 1) {
+        var uid = 'src-' + Math.random().toString(36).substr(2, 6);
+        html += '<button class="qgx-source-more" onclick="toggleSources(\'' + uid + '\')">+' + (sourceDocs.length - 1) + ' more</button>';
+        html += '<div class="qgx-source-all" id="' + uid + '">';
+        sourceDocs.slice(1).forEach(function(s) {
+            html += '<span class="qgx-source-tag" title="' + escapeHtml(s) + '">' + escapeHtml(truncate(s, 18)) + '</span>';
+        });
+        html += '</div>';
+    }
+    html += '</div>';
+    return html;
+}
+
+function toggleSources(uid) { var e = document.getElementById(uid); if (e) e.classList.toggle('show'); }
+
+function buildQuestionRow(q,allQuestions,typeBadgeMap,TRUNCATE_LEN){
+    var qtype=(q.question_type||'mcq').toLowerCase(),qidx=allQuestions.indexOf(q),marks=q.marks||1,answer=q.correct_answer||q.answer||'—';
+    var optionsHtml='';
+    if(qtype==='mcq'||qtype==='fitb'){['A','B','C','D'].forEach(function(lbl){var opt=q['option_'+lbl]||q['option'+lbl];if(opt){var isCorrect=answer===lbl||answer===lbl+')'||answer==='Option '+lbl;optionsHtml+='<div class="qgx-opt-row"><span class="qgx-opt-label">'+lbl+')</span><span class="qgx-opt-text'+(isCorrect?' correct':'')+'">'+escapeHtml(opt)+'</span></div>';}});}
+    else if(qtype==='tf'){optionsHtml='<div class="qgx-opt-row"><span class="qgx-opt-label">Options:</span><span class="qgx-opt-text">True / False</span></div>';}
+    else{optionsHtml='<span class="acdls">—</span>';}
+    var marksHtml='<div class="qgx-marks-inline"><input type="number" min="1" max="100" value="'+marks+'" data-qidx="'+qidx+'" class="marks-chg-input"></div>';
+    var answerText=escapeHtml(answer);
+    var answerHtml=answer.length>TRUNCATE_LEN?'<div class="qgx-ans-expand" id="ans-'+qidx+'"><span class="qgx-ans-short">'+answerText.substring(0,TRUNCATE_LEN)+'...<button class="qgx-btn-expand" data-qidx="'+qidx+'">more</button></span><span class="qgx-ans-full">'+answerText+'<button class="qgx-btn-expand" data-qidx="'+qidx+'"> less</button></span></div>':'<span class="qgx-ans-badge">'+answerText+'</span>';
+    return '<tr data-type="'+qtype+'" data-qidx="'+qidx+'">'
+        +'<td><b>'+(qidx+1)+'</b></td>'
+        +'<td class="qgx-q-cell">'+escapeHtml(q.question||q.question_text||'')+'</td>'
+        +'<td class="qgx-opts-cell">'+optionsHtml+'</td>'
+        +'<td><span class="qgx-type-badge '+qtype+'">'+(typeBadgeMap[qtype]||qtype.toUpperCase())+'</span></td>'
+        +'<td>'+marksHtml+'</td>'
+        +'<td>'+answerHtml+'</td>'
+        +'<td>'+buildSourceHtml(q)+'</td>'
+        +'<td><div class="qgx-action-btns"><button class="qgx-btn-sm edit-q-btn" data-qidx="'+qidx+'" title="Edit"><i class="fas fa-edit"></i></button><button class="qgx-btn-sm danger del-q-btn" data-qidx="'+qidx+'" title="Delete"><i class="fas fa-trash"></i></button></div></td>'
+        +'</tr>';
+}
+
+// ─── 1. Helper: Extract key letter (A, B, C, D) from answer string ───
+// Handles inputs like "A", "A)", "1. A", "Option A"
+function getCleanKey(answer) {
+    if (!answer) return 'A';
+    var match = answer.toUpperCase().match(/([A-D])/);
+    // Returns 'A', 'B', 'C', or 'D', or defaults to 'A'
+    return match ? match[1] : 'A';
+}
+
+// ─── 2. Ratio Checker ───────────────────────────────────────────────
+// Analyzes current distribution and returns counts object
+function ratioChecker(questions) {
+    var counts = { A: 0, B: 0, C: 0, D: 0 };
+    var total = 0;
+
+    questions.forEach(function(q) {
+        var type = (q.question_type || 'mcq').toLowerCase();
+        // Only check MCQs and Fill in the Blanks
+        if (type === 'mcq' || type === 'fitb') {
+            var key = getCleanKey(q.correct_answer);
+            if (counts[key] !== undefined) {
+                counts[key]++;
+                total++;
+            }
+        }
+    });
+
+    console.log("[RatioChecker] Distribution:", counts);
+    
+    // Optional: Calculate simple skew percentage
+    var max = Math.max(counts.A, counts.B, counts.C, counts.D);
+    var percentage = total > 0 ? Math.round((max / total) * 100) : 0;
+    
+    console.log("[RatioChecker] Dominant option:", percentage + "%");
+
+    return counts;
+}
+
+// ─── 3. Balance Corrector ─────────────────────────────────────────────
+// Shuffles options to ensure even distribution
+function balanceCorrector(questions) {
+    // 1. Filter only relevant question types
+    var relevantQuestions = questions.filter(function(q) {
+        var t = (q.question_type || 'mcq').toLowerCase();
+        return t === 'mcq' || t === 'fitb';
+    });
+
+    if (relevantQuestions.length === 0) return;
+
+    // 2. Create a perfect balanced sequence of keys
+    // Example: ['A', 'B', 'C', 'D', 'A', 'B', 'C', 'D', ...]
+    var idealSequence = [];
+    var totalNeeded = relevantQuestions.length;
+    
+    // Shuffle the "template" array so it's not always A, B, C, D order
+    var base = ['A', 'B', 'C', 'D'];
+    base.sort(function() { return Math.random() - 0.5; });
+
+    for (var i = 0; i < totalNeeded; i++) {
+        idealSequence.push(base[i % 4]);
+    }
+
+    // 3. Iterate and Swap options to match the ideal sequence
+    relevantQuestions.forEach(function(q, index) {
+        var targetKey = idealSequence[index];
+        var currentKey = getCleanKey(q.correct_answer);
+
+        // If the current correct answer is already the target, skip
+        if (currentKey === targetKey) return;
+
+        // -- PERFORM SWAP --
+        // We swap the text content of the current option with the target option.
+        // This preserves the question logic but changes which label is correct.
+        
+        var optCurrentKey = 'option_' + currentKey; // e.g., 'option_A'
+        var optTargetKey  = 'option_' + targetKey;  // e.g., 'option_C'
+
+        // Safety check: ensure both options exist in the object
+        if (q[optCurrentKey] && q[optTargetKey]) {
+            var temp = q[optCurrentKey];
+            
+            q[optCurrentKey] = q[optTargetKey];
+            q[optTargetKey] = temp;
+
+            // Update the correct_answer string to the new target key
+            // We preserve the format if it was "A)" or "A."
+            var format = "";
+            if (/\)$/.test(q.correct_answer)) format = ")";
+            else if (/\.$/.test(q.correct_answer)) format = ".";
+            
+            q.correct_answer = targetKey + format;
+            
+            console.log("[BalanceCorrector] Swapped Q" + index + " from " + currentKey + " to " + targetKey);
+        }
+    });
+}
+
+function renderStats(questions,marksDistribution){
+    var typeCounts={},typeLabels={mcq:'MCQ',tf:'True/False',fitb:'Fill Blanks',sa:'Short Answer',desc:'Descriptive'};
+    questions.forEach(function(q){var t=(q.question_type||'mcq').toLowerCase();typeCounts[t]=(typeCounts[t]||0)+1;});
+    var bdHtml='';
+    Object.keys(typeCounts).forEach(function(t){bdHtml+='<div class="qgx-stat-item"><span class="qgx-type-badge '+t+'">'+(typeLabels[t]||t)+'</span><span class="qgx-stat-count">'+typeCounts[t]+'</span></div>';});
+    document.getElementById('statsBreakdown').innerHTML=bdHtml||'<span class="acdlt">No data</span>';
+    var marksHtml='';
+    if(marksDistribution&&typeof marksDistribution==='object'){Object.keys(marksDistribution).forEach(function(t){var dist=marksDistribution[t];if(dist){marksHtml+='<div class="qgx-marks-bk-item"><span><span class="qgx-marks-badge">'+(typeLabels[t]||t)+'</span></span><span class="qgx-marks-val-green">'+(dist.total_marks||dist)+' marks</span></div>';}});}
+    else{var mp={};questions.forEach(function(q){var t=(q.question_type||'mcq').toLowerCase();mp[t]=(mp[t]||0)+(q.marks||1);});Object.keys(mp).forEach(function(t){marksHtml+='<div class="qgx-marks-bk-item"><span><span class="qgx-marks-badge">'+(typeLabels[t]||t)+'</span> × '+(typeCounts[t]||'?')+' Qs</span><span class="qgx-marks-val-green">'+mp[t]+' marks</span></div>';});}
+    document.getElementById('marksBreakdown').innerHTML=marksHtml||'<span class="acdlu">No data</span>';
+}
+
+function openEditModal(qidx){
+    var q=state.generatedQuestions[qidx]; if(!q) return;
+    var qtype=(q.question_type||'').toLowerCase();
+    document.getElementById('editQIdx').value=qidx; document.getElementById('editQType').value=qtype;
+    document.getElementById('editQText').value=q.question||q.question_text||'';
+    document.getElementById('editOptA').value=q.option_A||q.optionA||q.option_a||'';
+    document.getElementById('editOptB').value=q.option_B||q.optionB||q.option_b||'';
+    document.getElementById('editOptC').value=q.option_C||q.optionC||q.option_c||'';
+    document.getElementById('editOptD').value=q.option_D||q.optionD||q.option_d||'';
+    document.getElementById('editMarks').value=q.marks||1;
+    var answerVal=q.correct_answer||q.answer||'';
+    var isLong=(qtype==='sa'||qtype==='desc');
+    var ansInput=document.getElementById('editCorrectAnswerInput'), ansTa=document.getElementById('editCorrectAnswerTextarea');
+    if(isLong){ansInput.style.display='none';ansTa.style.display='block';ansTa.value=answerVal;}
+    else{ansInput.style.display='block';ansTa.style.display='none';ansInput.value=answerVal;}
+    document.getElementById('editOptionsWrap').style.display=(qtype==='mcq'||qtype==='fitb')?'block':'none';
+    document.getElementById('editModal').classList.add('show');
+    document.getElementById('editQText').focus();
+}
+function closeEditModal(){document.getElementById('editModal').classList.remove('show');}
+function saveEditedQuestion(){
+    var qidx=parseInt(document.getElementById('editQIdx').value), qtype=document.getElementById('editQType').value, q=state.generatedQuestions[qidx];
+    if(!q){closeEditModal();return;}
+    var newText=document.getElementById('editQText').value.trim();
+    if(!newText){document.getElementById('editQText').style.borderColor='#dc2626';return;}
+    document.getElementById('editQText').style.borderColor='';
+    if('question'in q)q.question=newText; if('question_text'in q)q.question_text=newText; if(!('question'in q)&&!('question_text'in q))q.question=newText;
+    q.option_A=document.getElementById('editOptA').value.trim()||undefined;
+    q.option_B=document.getElementById('editOptB').value.trim()||undefined;
+    q.option_C=document.getElementById('editOptC').value.trim()||undefined;
+    q.option_D=document.getElementById('editOptD').value.trim()||undefined;
+    var isLong=(qtype==='sa'||qtype==='desc');
+    q.correct_answer=isLong?document.getElementById('editCorrectAnswerTextarea').value.trim():document.getElementById('editCorrectAnswerInput').value.trim();
+    q.marks=Math.max(1,Math.min(100,parseInt(document.getElementById('editMarks').value)||1));
+    closeEditModal(); renderQuestionsTable(state.generatedQuestions,currentFilter); updateMarksTotalBar();
+}
+function deleteQuestion(qidx){if(!confirm('Delete this question?'))return;state.generatedQuestions.splice(qidx,1);updateFilterBar(state.generatedQuestions);renderQuestionsTable(state.generatedQuestions,currentFilter);updateMarksTotalBar();}
+function toggleAnswer(qidx){var e=document.getElementById('ans-'+qidx);if(e)e.classList.toggle('expanded');}
+
+function checkMarksMatch(){
+    var used=getTotalAssignedMarks(),target=state.totalMarks;
+    if(used!==target){
+        var diff=target-used;
+        var msg=diff>0?'⚠ '+diff+' marks still unassigned (total: '+used+' / '+target+'). Adjust question marks to proceed.':'⚠ '+Math.abs(diff)+' marks over the limit (total: '+used+' / '+target+'). Reduce some question marks.';
+        showValMsg('saveMsg','error',msg);
+        var bar=document.getElementById('marksTotalBar'); if(bar)bar.scrollIntoView({behavior:'smooth',block:'center'});
+        return false;
+    }
+    hideValMsg('saveMsg'); return true;
+}
+
+// ── Event listeners ───────────────────────────────────────────────────────────
+
+// Hierarchy dropdowns — all re-load with combined search
+el.course.addEventListener('change', function() {
+    resetDropdown('leg','Select course first'); resetDropdown('subject','Select leg'); resetDropdown('chapter','Select subject'); resetDropdown('topic','Select chapter'); resetDropdown('section','Select topic');
+    if(this.value) loadFilterOptions('leg',URLS.getLegs,{course_id:this.value});
+    loadDocuments();
+});
+el.leg.addEventListener('change',function(){
+    resetDropdown('subject','Select leg first'); resetDropdown('chapter','Select subject'); resetDropdown('topic','Select chapter'); resetDropdown('section','Select topic');
+    if(this.value) loadFilterOptions('subject',URLS.getSubjects,{leg_id:this.value});
+    loadDocuments();
+});
+el.subject.addEventListener('change',function(){
+    resetDropdown('chapter','Select subject first'); resetDropdown('topic','Select chapter'); resetDropdown('section','Select topic');
+    if(this.value) loadFilterOptions('chapter',URLS.getChapters,{subject_id:this.value});
+    loadDocuments();
+});
+el.chapter.addEventListener('change',function(){
+    resetDropdown('topic','Select chapter first'); resetDropdown('section','Select topic');
+    if(this.value) loadFilterOptions('topic',URLS.getTopics,{chapter_id:this.value});
+    loadDocuments();
+});
+el.topic.addEventListener('change',function(){
+    resetDropdown('section','Select topic first');
+    if(this.value) loadFilterOptions('section',URLS.getSections,{topic_id:this.value});
+    loadDocuments();
+});
+el.section.addEventListener('change', loadDocuments);
+
+el.btnClear.addEventListener('click',function(){
+    state.selectedDocs=[];
+    document.querySelectorAll('.qgx-doc-item.selected').forEach(function(e){e.classList.remove('selected');});
+    updateSelectedBar();
+});
+
+el.docList.addEventListener('click',function(e){var item=e.target.closest('.qgx-doc-item');if(item)toggleDocSelect(item);});
+
+el.btnStep1Next.addEventListener('click',function(){
+    if(state.selectedDocs.length===0){showValMsg('step1Val','error','Please select at least one document.');return;}
+    hideValMsg('step1Val'); buildStep2Docs(); setStep(2);
+});
+el.btnStep2Back.addEventListener('click',function(){setStep(1);});
+el.btnStep2Next.addEventListener('click',function(){hideValMsg('step2Val');setStep(3);});
+el.btnStep3Back.addEventListener('click',function(){setStep(2);});
+el.btnResultsBack.addEventListener('click',function(){setStep(3);});
+
+el.marksSlider.addEventListener('input',function(){ state.totalMarks=parseInt(this.value); el.marksDisplay.textContent=state.totalMarks; el.marksInput.value=state.totalMarks; updateSliderGradient(this); updateSummary(); });
+el.marksInput.addEventListener('input',function(){ var v=Math.max(1,Math.min(100,parseInt(this.value)||50)); state.totalMarks=v; el.marksSlider.value=v; el.marksDisplay.textContent=v; updateSliderGradient(el.marksSlider); updateSummary(); });
+el.marksInput.addEventListener('change',function(){ var v=Math.max(1,Math.min(100,parseInt(this.value)||50)); this.value=v; state.totalMarks=v; el.marksSlider.value=v; el.marksDisplay.textContent=v; updateSliderGradient(el.marksSlider); });
+
+document.querySelector('.qgx-qtype-grid').addEventListener('click',function(e){
+    var btn=e.target.closest('[data-delta]');
+    if(btn){e.stopPropagation();changeCount(btn,parseInt(btn.dataset.delta));return;}
+    var numInput=e.target.closest('.qgx-num'); if(numInput){e.stopPropagation();return;}
+    var card=e.target.closest('.qgx-qtype-card'); if(card)toggleQtype(card);
+});
+document.querySelector('.qgx-qtype-grid').addEventListener('change',function(e){ if(e.target.classList.contains('qgx-num'))updateSummary(); });
+
+// ── CHANGE 2 + 3: generate button sends keyword and difficulty ────────────────
+el.btnGenerate.addEventListener('click',function(){
+    var questionTypes=[];
+    document.querySelectorAll('.qgx-qtype-card.active').forEach(function(card){
+        var type=card.getAttribute('data-type'), count=parseInt(card.querySelector('.qgx-num').value)||0;
+        if(type&&count>0)questionTypes.push({type:type,count:count});
+    });
+    if(questionTypes.length===0){document.getElementById('step3ValMsg').textContent='Please select at least one question type.';document.getElementById('step3Val').className='qgx-val-msg error';return;}
+    if(state.selectedDocs.length===0){document.getElementById('step3ValMsg').textContent='No documents selected. Please go back to Step 1.';document.getElementById('step3Val').className='qgx-val-msg error';return;}
+
+    var docsPayload=state.selectedDocs.map(function(doc){
+        var pageInput=document.querySelector('.page-range-input[data-doc-id="'+doc.id+'"]');
+        return{id:doc.id,name:doc.document_name,source_level:doc.source_level,pages:pageInput?pageInput.value.trim():''};
+    });
+
+    var payload={
+        documents:      docsPayload,
+        total_marks:    state.totalMarks,
+        question_types: questionTypes,
+        keyword: (document.getElementById('topicKeywordInput').value || '').trim(),   // NEW
+        difficulty:     state.difficulty       // CHANGE 3
+    };
+
+    showLoading('Generating Questions with AI...');
+    el.btnGenerate.disabled=true;
+    postJSON(URLS.generateQuestions,payload).then(function(result){
+        hideLoading(); el.btnGenerate.disabled=false;
+        if(result.status==='success'){state.generatedQuestions=result.data.questions||[];renderResults(result.data);setStep(4);}
+        else{document.getElementById('step3ValMsg').textContent=result.message||'Generation failed.';document.getElementById('step3Val').className='qgx-val-msg error';}
+    }).catch(function(){hideLoading();el.btnGenerate.disabled=false;document.getElementById('step3ValMsg').textContent='Network error. Please check connection.';document.getElementById('step3Val').className='qgx-val-msg error';});
+});
+
+document.getElementById('resultsTableBody').addEventListener('click',function(e){
+    var editBtn=e.target.closest('.edit-q-btn'); if(editBtn){openEditModal(parseInt(editBtn.dataset.qidx));return;}
+    var delBtn=e.target.closest('.del-q-btn');  if(delBtn){deleteQuestion(parseInt(delBtn.dataset.qidx));return;}
+    var expandBtn=e.target.closest('.qgx-btn-expand'); if(expandBtn){toggleAnswer(parseInt(expandBtn.dataset.qidx));return;}
+});
+document.getElementById('resultsTableBody').addEventListener('change',function(e){ var inp=e.target.closest('.marks-chg-input'); if(inp)onMarksChange(parseInt(inp.dataset.qidx),inp.value); });
+document.getElementById('resultsTableBody').addEventListener('input',function(e){ var inp=e.target.closest('.marks-chg-input'); if(inp)onMarksChange(parseInt(inp.dataset.qidx),inp.value); });
+
+document.getElementById('btnModalClose').addEventListener('click',closeEditModal);
+document.getElementById('btnModalCancel').addEventListener('click',closeEditModal);
+document.getElementById('btnModalSave').addEventListener('click',saveEditedQuestion);
+document.getElementById('editModal').addEventListener('click',function(e){if(e.target===this)closeEditModal();});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeEditModal();});
+
+document.getElementById('btnGeneratePDF').addEventListener('click',function(){
+    if(state.generatedQuestions.length===0){alert('No questions to export. Please generate questions first.');return;}
+    if(!checkMarksMatch())return;
+    showLoading('Generating PDF...');
+    var payload={source_doc_ids: state.selectedDocs.map(function(d) { return d.id; }),questions:state.generatedQuestions,total_marks:state.totalMarks,title:document.getElementById('paperTitle').value.trim()||'Question Paper',duration:parseInt(document.getElementById('paperDuration').value)||120,instructions:document.getElementById('paperInstructions').value.trim(),school:document.getElementById('paperSchool').value.trim(),include_answers:document.getElementById('includeAnswers').checked,separate_answers:document.getElementById('separateAnswers').checked,include_marks:document.getElementById('includeMarks').checked};
+    fetch(URLS.generatePDF,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':getCsrfToken()},body:JSON.stringify(payload)}).then(function(response){
+        hideLoading();
+        if(!response.ok)return response.json().then(function(d){throw new Error(d.message||'PDF failed');});
+        var contentType=response.headers.get('Content-Type')||'';
+        if(contentType.includes('application/pdf')){return response.blob().then(function(blob){var url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=(payload.title.replace(/\s+/g,'_')||'question_paper')+'.pdf';document.body.appendChild(link);link.click();document.body.removeChild(link);URL.revokeObjectURL(url);});}
+        else{return response.json().then(function(d){alert(d.message||'PDF generated.');});}
+    }).catch(function(err){hideLoading();alert('PDF generation failed: '+err.message);});
+});
+
+document.getElementById('btnSaveBank').addEventListener('click',function(){
+    if(state.generatedQuestions.length===0){showValMsg('saveMsg','error','No questions to save. Generate questions first.');return;}
+    var now=new Date(),dateStr=now.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}),timeStr=now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    var docNames=state.selectedDocs.map(function(d){return d.document_name;}).slice(0,2).join(', ');
+    var autoTitle='Q-Bank '+dateStr+' '+timeStr+(docNames?' — '+docNames:'');
+    showLoading('Saving Questions...');
+    this.disabled=true;
+    var btn=this;
+    var payload={title:autoTitle,description:'Auto-saved from Question Generation. Sources: '+(docNames||'N/A'),bank_type:'bank',course_id:null,total_marks:state.totalMarks,keyword:(document.getElementById('topicKeywordInput').value||'').trim()||null,source_docs:state.selectedDocs.map(function(d){return{id:d.id,name:d.document_name};}),uploaded_by_name:'{{ request.user.get_full_name|default:request.user.username }}',questions: state.generatedQuestions.map(function(q) {
+    // Match source_docs names back to IDs from state.selectedDocs
+    // AFTER (fixed)
+    var qSrcNames = Array.isArray(q.source_docs) ? q.source_docs : (q.source_docs ? [q.source_docs] : []);
+    var qSrcIds = state.selectedDocs
+        .filter(function(d) { return qSrcNames.indexOf(d.document_name) !== -1; })
+        .map(function(d) { return d.id; });
+    return Object.assign({}, q, {
+        source_doc_ids: qSrcIds.length ? qSrcIds : state.selectedDocs.map(function(d) { return d.id; })
+    });
+})};    postJSON(URLS.saveBank,payload).then(function(result){
+        hideLoading();btn.disabled=false;
+        if(result.status==='success')showValMsg('saveMsg','success',result.message||'✓ Saved '+state.generatedQuestions.length+' questions successfully!');
+        else showValMsg('saveMsg','error',result.message||'Save failed.');
+    }).catch(function(err){hideLoading();btn.disabled=false;showValMsg('saveMsg','error','Network error: '+err.message);});
+});
+
+window.addEventListener('DOMContentLoaded',function(){
+    setStep(1); updateSliderGradient(el.marksSlider); updateSummary();    loadDocuments();   // ← ADD THIS LINE
+    document.getElementById('filterBarInner').innerHTML='<div class="qgx-filter-bar-label">Filter by type:</div><button class="qgx-filter-btn active" data-filter="all">All</button>';
+
+    // ── Global hierarchy tooltip engine (mirrored from hierarchy view) ────────────
+(function() {
+    var gHCard  = document.getElementById('gHierarchyCard');
+    var gHPath  = document.getElementById('gHierarchyPath');
+    var CARD_W  = 280;
+    var MARGIN  = 12;
+    var VP_PAD  = 8;
+
+    function positionCard(card, rect) {
+        var vpW = window.innerWidth;
+        var vpH = window.innerHeight;
+        var cardH = card.offsetHeight || 200;
+
+        var left = rect.left;
+        if (left + CARD_W > vpW - VP_PAD) left = vpW - CARD_W - VP_PAD;
+        if (left < VP_PAD) left = VP_PAD;
+
+        var spaceBelow = vpH - rect.bottom;
+        var spaceAbove = rect.top;
+        var top = (spaceBelow >= cardH + MARGIN || spaceBelow >= spaceAbove)
+            ? rect.bottom + MARGIN
+            : rect.top - MARGIN - cardH;
+
+        card.style.left = left + 'px';
+        card.style.top  = top  + 'px';
+    }
+
+    // Delegation on the doc list container
+    el.docList.addEventListener('mouseover', function(e) {
+        var trigger = e.target.closest('.qgx-doc-name-trigger');
+        if (!trigger) return;
+        var raw = trigger.getAttribute('data-steps-html') || '';
+        var stepsHtml = raw.replace(/&quot;/g, '"');
+        gHPath.innerHTML = stepsHtml;
+        gHCard.classList.add('visible');
+        requestAnimationFrame(function() {
+            positionCard(gHCard, trigger.getBoundingClientRect());
+        });
+    });
+
+    el.docList.addEventListener('mouseout', function(e) {
+        var trigger = e.target.closest('.qgx-doc-name-trigger');
+        if (trigger && !trigger.contains(e.relatedTarget)) {
+            gHCard.classList.remove('visible');
+        }
+    });
+
+    // Hide on scroll so it doesn't float in the wrong position
+    document.addEventListener('scroll', function() {
+        gHCard.classList.remove('visible');
+    }, true);
+})();
+
+// ── Duplicate-check intercept ────────────────────────────────────────────────
+(function () {
+ 
+    // Tracks whether user already confirmed "generate more" for current session
+    var dupConfirmed = false;
+    // Stores doc names returned by the check so the "See Generated" button can use them
+    var _dupDocNames = [];
+ 
+    // ── Patch the Generate button click ───────────────────────────────────────
+    // We replace the original listener by cloning the button node, then
+    // attaching a new listener that runs the pre-check first.
+    var originalBtn = document.getElementById('btnGenerate');
+    var newBtn      = originalBtn.cloneNode(true);
+    originalBtn.parentNode.replaceChild(newBtn, originalBtn);
+ 
+    // Keep the module-level reference in sync
+    el.btnGenerate = newBtn;
+    // updateSummary() uses el.btnGenerate.disabled — re-run once
+    updateSummary();
+ 
+    newBtn.addEventListener('click', function () {
+        // If user already chose "generate more" in this session, skip check
+        if (dupConfirmed) {
+            dupConfirmed = false;   // reset for next click
+            _doGenerate();
+            return;
+        }
+ 
+        // Validate question types first (fast, no network)
+        var questionTypes = [];
+        document.querySelectorAll('.qgx-qtype-card.active').forEach(function (card) {
+            var type  = card.getAttribute('data-type');
+            var count = parseInt(card.querySelector('.qgx-num').value) || 0;
+            if (type && count > 0) questionTypes.push({ type: type, count: count });
+        });
+        if (questionTypes.length === 0) {
+            document.getElementById('step3ValMsg').textContent = 'Please select at least one question type.';
+            document.getElementById('step3Val').className = 'qgx-val-msg error';
+            return;
+        }
+        if (state.selectedDocs.length === 0) {
+            document.getElementById('step3ValMsg').textContent = 'No documents selected. Please go back to Step 1.';
+            document.getElementById('step3Val').className = 'qgx-val-msg error';
+            return;
+        }
+ 
+        // ── Run the duplicate check ────────────────────────────────────────
+        var docsPayload = state.selectedDocs.map(function (doc) {
+            return { id: doc.id, name: doc.document_name };
+        });
+ 
+        newBtn.disabled = true;
+        newBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+ 
+        postJSON(URLS.checkDocumentQuestions, { documents: docsPayload })
+            .then(function (result) {
+                newBtn.disabled = false;
+                newBtn.innerHTML = '<i class="fas fa-magic"></i> Generate Questions';
+ 
+                if (result.has_existing && result.total_count > 0) {
+                    // Show duplicate modal
+                    _dupDocNames = result.doc_names || [];
+                    _showDupModal(result.total_count, _dupDocNames);
+                } else {
+                    // No duplicates — go straight to generation
+                    _doGenerate();
+                }
+            })
+            .catch(function () {
+                // If check fails (network etc.) proceed with generation anyway
+                newBtn.disabled = false;
+                newBtn.innerHTML = '<i class="fas fa-magic"></i> Generate Questions';
+                _doGenerate();
+            });
+    });
+ 
+    // ── Show the duplicate modal ───────────────────────────────────────────
+    function _showDupModal(count, docNames) {
+        // Summary text
+        var plural = count === 1 ? 'question' : 'questions';
+        document.getElementById('dupSummaryText').textContent =
+            'You have already generated questions from ' +
+            (docNames.length === 1 ? 'this document' : 'these documents') + '.';
+        document.getElementById('dupCountText').textContent =
+            count + ' existing ' + plural + ' found in your Question Bank.';
+ 
+        // Doc chips
+        var chipsEl = document.getElementById('dupDocChips');
+        chipsEl.innerHTML = '';
+        (docNames.length ? docNames : ['Unknown document']).forEach(function (name) {
+            var chip = document.createElement('span');
+            chip.style.cssText = [
+                'display:inline-flex;align-items:center;gap:5px',
+                'background:rgba(240,100,73,0.08)',
+                'border:1px solid rgba(240,100,73,0.22)',
+                'color:#b84030',
+                'font-size:0.7rem;font-weight:700',
+                'padding:3px 10px;border-radius:20px',
+            ].join(';');
+            chip.innerHTML = '<i class="fas fa-file-pdf" style="font-size:0.65rem;"></i> ' +
+                _truncStr(name, 36);
+            chip.title = name;
+            chipsEl.appendChild(chip);
+        });
+ 
+        document.getElementById('dupCheckModal').classList.add('show');
+    }
+ 
+    function _truncStr(s, n) {
+        return s && s.length > n ? s.slice(0, n) + '…' : (s || '');
+    }
+ 
+    // ── Modal close / cancel ───────────────────────────────────────────────
+    document.getElementById('dupModalClose').addEventListener('click', _closeDupModal);
+    document.getElementById('dupCheckModal').addEventListener('click', function (e) {
+        if (e.target === this) _closeDupModal();
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') _closeDupModal();
+    });
+ 
+    function _closeDupModal() {
+        document.getElementById('dupCheckModal').classList.remove('show');
+    }
+ 
+    // ── "See Generated" → redirect to explorer with doc filter ────────────
+    document.getElementById('dupBtnSeeOld').addEventListener('click', function () {
+        _closeDupModal();
+ 
+        // Build query string: ?doc_filter=DocName1,DocName2
+        var encoded = encodeURIComponent(_dupDocNames.join(','));
+        var url     = URLS.explorerUrl + '?doc_filter=' + encoded;
+        window.location.href = url;
+    });
+ 
+    // ── "Generate More" → skip check and proceed ──────────────────────────
+    document.getElementById('dupBtnGenMore').addEventListener('click', function () {
+        _closeDupModal();
+        dupConfirmed = true;
+        // Programmatically click the (now-unguarded) generate button
+        newBtn.click();
+    });
+ 
+    // ── The actual generation logic (moved out of the original listener) ──
+    function _doGenerate() {
+        var questionTypes = [];
+        document.querySelectorAll('.qgx-qtype-card.active').forEach(function (card) {
+            var type  = card.getAttribute('data-type');
+            var count = parseInt(card.querySelector('.qgx-num').value) || 0;
+            if (type && count > 0) questionTypes.push({ type: type, count: count });
+        });
+        if (questionTypes.length === 0) {
+            document.getElementById('step3ValMsg').textContent = 'Please select at least one question type.';
+            document.getElementById('step3Val').className = 'qgx-val-msg error';
+            return;
+        }
+        if (state.selectedDocs.length === 0) {
+            document.getElementById('step3ValMsg').textContent = 'No documents selected. Please go back to Step 1.';
+            document.getElementById('step3Val').className = 'qgx-val-msg error';
+            return;
+        }
+ 
+        var docsPayload = state.selectedDocs.map(function (doc) {
+            var pageInput = document.querySelector('.page-range-input[data-doc-id="' + doc.id + '"]');
+            return {
+                id:           doc.id,
+                name:         doc.document_name,
+                source_level: doc.source_level,
+                pages:        pageInput ? pageInput.value.trim() : ''
+            };
+        });
+ 
+        var payload = {
+            documents:      docsPayload,
+            total_marks:    state.totalMarks,
+            question_types: questionTypes,
+            keyword:        (document.getElementById('topicKeywordInput').value || '').trim(),
+            difficulty:     state.difficulty
+        };
+ 
+        showLoading('Generating Questions with AI...');
+        newBtn.disabled = true;
+ 
+        postJSON(URLS.generateQuestions, payload)
+            .then(function (result) {
+                hideLoading();
+                newBtn.disabled = false;
+                if (result.status === 'success') {
+    var questions = result.data.questions || [];
+    
+    // ... keep your existing enrichment logic (source_docs mapping) ...
+    var nameToId = {};
+    docsPayload.forEach(function(d) { nameToId[d.name] = d.id; });
+    
+    questions.forEach(function(q) {
+        var names = Array.isArray(q.source_docs) ? q.source_docs : (q.source_docs ? [q.source_docs] : []);
+        q.source_doc_ids = names.map(function(n) { return nameToId[n]; }).filter(Boolean);
+        if (!q.source_doc_ids.length) {
+            q.source_doc_ids = docsPayload.map(function(d) { return d.id; });
+        }
+    });
+
+    // ─── ADDED: CALL CORRECTION FUNCTIONS ─────────────
+    // 1. Check Ratio (Logs to console)
+    ratioChecker(questions);
+    
+    // 2. Balance Options (Modifies the 'questions' array in place)
+    balanceCorrector(questions);
+    // ────────────────────────────────────────────────────
+
+    state.generatedQuestions = questions;
+    renderResults(result.data);
+    setStep(4);
+                } else {
+                    document.getElementById('step3ValMsg').textContent = result.message || 'Generation failed.';
+                    document.getElementById('step3Val').className = 'qgx-val-msg error';
+                }
+            })
+            .catch(function () {
+                hideLoading();
+                newBtn.disabled = false;
+                document.getElementById('step3ValMsg').textContent = 'Network error. Please check connection.';
+                document.getElementById('step3Val').className = 'qgx-val-msg error';
+            });
+    }
+ 
+})();
+});
+
+</script>
+{% endblock %}

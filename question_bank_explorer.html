@@ -1,0 +1,2144 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Question Bank Explorer | Sawal{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --bg: #f3f4f8; --white: #ffffff; --brand: #1C4D8D; --brand-light: #e8eef8;
+        --accent: #F06449; --accent-light: #fff2ef; --green: #2ecc8d; --green-light: #e6faf3;
+        --purple: #7c5cbf; --purple-light: #f0ebfc; --amber: #F59E0B; --amber-light: #fffbeb;
+        --text: #1a2340; --text-mid: #4a5568; --text-soft: #94a3b8; --border: #dde3ef;
+        --radius: 14px; --radius-sm: 8px;
+        --shadow: 0 2px 16px rgba(28,77,141,0.08); --shadow-lg: 0 8px 40px rgba(28,77,141,0.14);
+        --transition: all 0.22s cubic-bezier(.4,0,.2,1);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; min-height: 100vh; }
+
+    .qbe-header { background: linear-gradient(135deg, #1C4D8D 0%, #2563b0 60%, #3b82d4 100%); padding: 28px 32px 22px; border-radius: var(--radius); margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--shadow-lg); position: relative; overflow: hidden; margin-top: 10px; }
+    .qbe-header::before { content:''; position:absolute; right:-60px; top:-60px; width:260px; height:260px; border-radius:50%; background:rgba(255,255,255,0.06); pointer-events:none; }
+    .qbe-header::after  { content:''; position:absolute; right:80px; bottom:-90px; width:180px; height:180px; border-radius:50%; background:rgba(255,255,255,0.04); pointer-events:none; }
+    .qbe-hdr-left h1 { font-family:'Fraunces',serif; font-size:1.65rem; font-weight:900; color:#fff; line-height:1.15; letter-spacing:-0.3px; }
+    .qbe-hdr-left p { color:rgba(255,255,255,0.72); font-size:.88rem; margin-top:5px; }
+    .qbe-hdr-right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .qbe-hdr-badge { background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); color:#fff; padding:8px 18px; border-radius:40px; font-size:.8rem; font-weight:600; display:flex; align-items:center; gap:6px; backdrop-filter:blur(4px); }
+    .qbe-stat-pill { background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:6px 14px; border-radius:40px; font-size:.78rem; font-weight:600; display:flex; align-items:center; gap:6px; }
+    .qbe-stat-pill .val { font-family:'Fraunces',serif; font-size:1.1rem; font-weight:900; }
+
+    .qbe-card { background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow); padding:22px 24px; margin-bottom:16px; }
+    .qbe-card-title { display:flex; align-items:center; gap:10px; font-size:.92rem; font-weight:700; color:var(--brand); margin-bottom:16px; padding-bottom:12px; border-bottom:1.5px solid var(--border); }
+    .qbe-step-tag { background:var(--brand-light); color:var(--brand); font-size:.68rem; padding:2px 8px; border-radius:20px; font-weight:700; letter-spacing:.3px; }
+
+    .qbe-filter-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:14px; }
+    .qbe-fg-full { grid-column:1/-1; }
+    .qbe-filter-item label { display:block; font-size:.75rem; font-weight:600; color:var(--text-mid); margin-bottom:5px; }
+    .qbe-filter-item select, .qbe-filter-item input[type="text"], .qbe-filter-item input[type="number"], .qbe-filter-item input[type="date"] { width:100%; padding:8px 12px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:'DM Sans',sans-serif; font-size:.82rem; color:var(--text); background:#fafbfd; transition:var(--transition); }
+    .qbe-filter-item select { appearance:none; background: #fafbfd url("/static/images/dropdown-arrow.svg") no-repeat right 10px center; background-repeat:no-repeat; background-position:right 10px center; background-color:#fafbfd; cursor:pointer; }
+    .qbe-filter-item select:focus, .qbe-filter-item input:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 3px rgba(28,77,141,0.1); background-color:#fff; }
+    .qbe-filter-item input::placeholder { color:var(--text-soft); }
+
+    .qbe-pill-group { display:flex; flex-wrap:wrap; gap:6px; margin-top:2px; }
+    .qbe-pill-opt { padding:5px 13px; border:1.5px solid var(--border); border-radius:20px; font-size:.72rem; font-weight:600; cursor:pointer; transition:var(--transition); background:#fafbfd; color:var(--text-mid); user-select:none; white-space:nowrap; }
+    .qbe-pill-opt:hover { border-color:var(--brand); color:var(--brand); background:var(--brand-light); }
+    .qbe-pill-opt.active { background:var(--brand-light); border-color:var(--brand); color:var(--brand); }
+    .qbe-pill-opt.diff-easy.active   { background:var(--green-light);  border-color:var(--green);  color:#059669; }
+    .qbe-pill-opt.diff-medium.active { background:var(--amber-light);  border-color:var(--amber);  color:#92400e; }
+    .qbe-pill-opt.diff-hard.active   { background:var(--accent-light); border-color:var(--accent); color:#b84030; }
+
+    .qbe-range-row { display:flex; align-items:center; gap:8px; }
+    .qbe-range-row input { flex:1; }
+    .qbe-range-sep { color:var(--text-soft); font-size:.75rem; white-space:nowrap; }
+
+    .qbe-chips-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:10px 0 4px; min-height:36px; }
+    .qbe-chips-row.empty { display:none; }
+    .qbe-chip { display:inline-flex; align-items:center; gap:4px; background:var(--brand-light); border:1px solid rgba(28,77,141,0.2); color:var(--brand); font-size:.7rem; font-weight:700; padding:3px 9px; border-radius:20px; white-space:nowrap; }
+    .qbe-chip button { background:none; border:none; cursor:pointer; color:var(--brand); font-size:.7rem; padding:0 0 0 2px; line-height:1; transition:color .15s; }
+    .qbe-chip button:hover { color:var(--accent); }
+    .qbe-chip-clear-all { background:var(--accent-light); border:1px solid rgba(240,100,73,0.25); color:var(--accent); font-size:.7rem; font-weight:700; padding:3px 10px; border-radius:20px; cursor:pointer; font-family:'DM Sans',sans-serif; transition:var(--transition); }
+    .qbe-chip-clear-all:hover { background:rgba(240,100,73,0.18); }
+
+    .qbe-filter-actions { display:flex; align-items:center; justify-content:space-between; margin-top:16px; padding-top:14px; border-top:1.5px solid var(--border); flex-wrap:wrap; gap:10px; }
+    .qbe-filter-info { font-size:.72rem; color:var(--text-soft); display:flex; align-items:center; gap:6px; }
+    .qbe-fcnt { background:var(--accent); color:#fff; font-size:.65rem; font-weight:800; padding:1px 7px; border-radius:20px; display:none; }
+    .qbe-fcnt.show { display:inline-block; }
+    .qbe-filter-btns { display:flex; gap:8px; }
+
+    .qbe-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px; }
+    .qbe-results-count { font-size:.82rem; color:var(--text-mid); }
+    .qbe-results-count strong { color:var(--brand); font-family:'Fraunces',serif; font-size:1rem; }
+    .qbe-sort-wrap { display:flex; align-items:center; gap:8px; }
+    .qbe-sort-wrap label { font-size:.72rem; color:var(--text-soft); font-weight:600; white-space:nowrap; }
+    .qbe-sort-select { padding:7px 28px 7px 11px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:'DM Sans',sans-serif; font-size:.78rem; color:var(--text); background:#fff; cursor:pointer; appearance:none; background: #fafbfd url("/static/images/dropdown-arrow.svg") no-repeat right 10px center; background-repeat:no-repeat; background-position:right 8px center; background-color:#fff; transition:var(--transition); }
+    .qbe-sort-select:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 3px rgba(28,77,141,0.1); }
+    .qbe-view-toggle { display:flex; border:1.5px solid var(--border); border-radius:var(--radius-sm); overflow:hidden; }
+    .qbe-view-btn { padding:6px 11px; background:#fff; border:none; cursor:pointer; color:var(--text-soft); font-size:.8rem; transition:var(--transition); }
+    .qbe-view-btn:hover { color:var(--brand); background:var(--brand-light); }
+    .qbe-view-btn.active { background:var(--brand); color:#fff; }
+
+    .qbe-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:14px; }
+    @media(max-width:700px){ .qbe-grid{grid-template-columns:1fr;} }
+
+    .qbe-q-card { background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 18px; transition:var(--transition); border:1.5px solid var(--border); display:flex; flex-direction:column; gap:11px; position:relative; overflow:hidden; }
+    .qbe-q-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; border-radius:0 2px 2px 0; opacity:0; transition:opacity .2s; }
+    .qbe-q-card:hover { border-color:var(--brand); box-shadow:var(--shadow-lg); transform:translateY(-2px); }
+    .qbe-q-card:hover::before { opacity:1; }
+    .qbe-q-card.type-mcq::before  { background:var(--brand); }
+    .qbe-q-card.type-tf::before   { background:var(--green); }
+    .qbe-q-card.type-fitb::before { background:var(--amber); }
+    .qbe-q-card.type-sa::before   { background:var(--purple); }
+    .qbe-q-card.type-desc::before { background:var(--accent); }
+
+    .qbe-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+    .qbe-card-badges { display:flex; gap:5px; flex-wrap:wrap; flex:1; }
+    .qbe-badge { display:inline-flex; align-items:center; gap:3px; padding:3px 9px; border-radius:20px; font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.3px; white-space:nowrap; }
+    .badge-mcq  { background:rgba(28,77,141,0.1);  color:var(--brand);  border:1px solid rgba(28,77,141,0.18); }
+    .badge-tf   { background:var(--green-light);   color:#059669;       border:1px solid rgba(46,204,141,0.25); }
+    .badge-fitb { background:var(--amber-light);   color:#92400e;       border:1px solid rgba(245,158,11,0.25); }
+    .badge-sa   { background:var(--purple-light);  color:var(--purple); border:1px solid rgba(124,92,191,0.25); }
+    .badge-desc { background:var(--accent-light);  color:#b84030;       border:1px solid rgba(240,100,73,0.2); }
+    .badge-easy   { background:var(--green-light);  color:#059669; border:1px solid rgba(46,204,141,0.25); }
+    .badge-medium { background:var(--amber-light);  color:#92400e; border:1px solid rgba(245,158,11,0.2); }
+    .badge-hard   { background:var(--accent-light); color:#b84030; border:1px solid rgba(240,100,73,0.2); }
+    .badge-marks  { background:#f1f5f9; color:var(--text-mid); border:1px solid var(--border); }
+
+    .qbe-card-actions { display:flex; gap:4px; flex-shrink:0; }
+    .qbe-action-btn { width:28px; height:28px; background:#f1f5f9; border:1.5px solid var(--border); border-radius:var(--radius-sm); cursor:pointer; color:var(--text-mid); display:flex; align-items:center; justify-content:center; font-size:.75rem; transition:var(--transition); }
+    .qbe-action-btn:hover { background:var(--brand-light); border-color:var(--brand); color:var(--brand); }
+    .qbe-action-btn.danger:hover { background:var(--accent-light); border-color:var(--accent); color:var(--accent); }
+
+    .qbe-q-text { font-size:.85rem; font-weight:600; color:var(--text); line-height:1.55; }
+    .qbe-opts-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+    .qbe-opt-row { display:flex; align-items:baseline; gap:6px; padding:5px 8px; background:#f8fafc; border-radius:var(--radius-sm); border:1px solid var(--border); }
+    .qbe-opt-row.correct { background:var(--green-light); border-color:rgba(46,204,141,0.3); }
+    .qbe-opt-lbl { font-weight:700; font-size:.65rem; color:var(--text-soft); min-width:13px; }
+    .qbe-opt-row.correct .qbe-opt-lbl { color:var(--green); }
+    .qbe-opt-text { font-size:.75rem; color:var(--text-mid); line-height:1.35; }
+    .qbe-opt-row.correct .qbe-opt-text { color:#059669; font-weight:600; }
+    .qbe-answer-box { background:var(--green-light); border:1px solid rgba(46,204,141,0.3); border-radius:var(--radius-sm); padding:8px 12px; }
+    .qbe-answer-label { font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--green); margin-bottom:3px; }
+    .qbe-answer-text { font-size:.78rem; color:#059669; line-height:1.5; font-weight:600; }
+    .qbe-tf-opts { display:flex; gap:8px; }
+    .qbe-tf-opt { flex:1; padding:8px; text-align:center; font-size:.78rem; font-weight:600; border-radius:var(--radius-sm); border:1.5px solid var(--border); background:#f8fafc; color:var(--text-mid); }
+    .qbe-tf-opt.correct { background:var(--green-light); border-color:rgba(46,204,141,0.35); color:#059669; }
+
+    .qbe-card-footer { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px; padding-top:10px; border-top:1.5px solid var(--border); }
+    .qbe-meta-item { display:flex; align-items:center; gap:5px; font-size:.68rem; color:var(--text-soft); }
+    .qbe-meta-item strong { color:var(--text-mid); font-weight:600; }
+
+    .qbe-list-wrap { background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; border:1.5px solid var(--border); }
+    .qbe-list-table { width:100%; border-collapse:collapse; font-size:.78rem; }
+    .qbe-list-table thead { background:linear-gradient(135deg,#1C4D8D 0%,#2563b0 100%); }
+    .qbe-list-table th { padding:11px 12px; text-align:left; font-size:.72rem; font-weight:700; color:#fff; letter-spacing:.3px; text-transform:uppercase; white-space:nowrap; }
+    .qbe-list-table th.sortable { cursor:pointer; user-select:none; }
+    .qbe-list-table th.sortable:hover { color:rgba(255,255,255,.8); }
+    .qbe-list-table tbody tr { border-bottom:1px solid var(--border); transition:background .12s; }
+    .qbe-list-table tbody tr:hover { background:var(--brand-light); }
+    .qbe-list-table tbody tr:last-child { border-bottom:none; }
+    .qbe-list-table td { padding:11px 12px; vertical-align:middle; }
+    .qbe-list-q { font-weight:600; color:var(--text); cursor:pointer; }
+    .qbe-list-q:hover { color:var(--brand); text-decoration:underline; }
+
+    .qbe-loading { display:none; align-items:center; justify-content:center; gap:12px; padding:60px 20px; color:var(--text-mid); font-size:.85rem; }
+    .qbe-loading.show { display:flex; }
+    .qbe-spinner { width:28px; height:28px; border:3px solid var(--border); border-top-color:var(--brand); border-radius:50%; animation:qbe-spin .7s linear infinite; }
+    @keyframes qbe-spin { to{transform:rotate(360deg);} }
+    .qbe-empty { display:none; flex-direction:column; align-items:center; justify-content:center; padding:50px 20px; gap:12px; color:var(--text-soft); text-align:center; }
+    .qbe-empty.show { display:flex; }
+    .qbe-empty i { font-size:2.5rem; opacity:.3; }
+    .qbe-empty p { font-size:.88rem; max-width:280px; line-height:1.6; }
+
+    .qbe-pagination { display:flex; align-items:center; justify-content:space-between; margin-top:16px; flex-wrap:wrap; gap:10px; }
+    .qbe-pagination-info { font-size:.78rem; color:var(--text-soft); }
+    .qbe-page-btns { display:flex; gap:4px; }
+    .qbe-page-btn { min-width:33px; height:33px; padding:0 8px; background:#fff; border:1.5px solid var(--border); border-radius:var(--radius-sm); color:var(--text-mid); font-size:.78rem; font-weight:600; cursor:pointer; transition:var(--transition); display:flex; align-items:center; justify-content:center; font-family:'DM Sans',sans-serif; }
+    .qbe-page-btn:hover { border-color:var(--brand); color:var(--brand); background:var(--brand-light); }
+    .qbe-page-btn.active { background:var(--brand); border-color:var(--brand); color:#fff; }
+    .qbe-page-btn:disabled { opacity:.35; cursor:not-allowed; }
+    .qbe-page-btn.dots { cursor:default; pointer-events:none; }
+
+    .qbe-modal-overlay { display:none; position:fixed; inset:0; background:rgba(15,25,50,0.6); backdrop-filter:blur(4px); z-index:10000; align-items:center; justify-content:center; padding:20px; }
+    .qbe-modal-overlay.show { display:flex; }
+    .qbe-modal { background:#fff; border-radius:var(--radius); box-shadow:var(--shadow-lg); width:100%; max-width:660px; max-height:90vh; overflow-y:auto; animation:qbe-modal-in .22s cubic-bezier(.4,0,.2,1); }
+    @keyframes qbe-modal-in { from{opacity:0;transform:scale(.95) translateY(12px);} to{opacity:1;transform:scale(1) translateY(0);} }
+    .qbe-modal-hdr { display:flex; align-items:center; justify-content:space-between; padding:16px 22px; border-bottom:1.5px solid var(--border); position:sticky; top:0; background:#fff; z-index:1; }
+    .qbe-modal-hdr h3 { font-size:.95rem; font-weight:700; color:var(--brand); display:flex; align-items:center; gap:8px; }
+    .qbe-modal-close { width:30px; height:30px; background:#f1f5f9; border:none; border-radius:var(--radius-sm); cursor:pointer; color:var(--text-soft); font-size:.85rem; display:flex; align-items:center; justify-content:center; transition:var(--transition); }
+    .qbe-modal-close:hover { background:var(--accent-light); color:var(--accent); }
+    .qbe-modal-body { padding:20px 22px; display:flex; flex-direction:column; gap:16px; }
+
+    .qbe-view-sec label { display:block; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-soft); margin-bottom:5px; }
+    .qbe-view-val { font-size:.85rem; color:var(--text); line-height:1.55; }
+    .qbe-view-answer { background:var(--green-light); border:1px solid rgba(46,204,141,0.25); border-radius:var(--radius-sm); padding:9px 14px; font-size:.83rem; color:#059669; font-weight:600; line-height:1.5; }
+    .qbe-view-opts { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:4px; }
+    .qbe-view-opt { display:flex; align-items:baseline; gap:8px; padding:6px 10px; background:#f8fafc; border:1.5px solid var(--border); border-radius:var(--radius-sm); }
+    .qbe-view-opt.correct { background:var(--green-light); border-color:rgba(46,204,141,0.3); }
+    .qbe-view-opt-lbl { font-weight:700; font-size:.65rem; color:var(--text-soft); min-width:13px; }
+    .qbe-view-opt.correct .qbe-view-opt-lbl { color:var(--green); }
+    .qbe-view-opt-text { font-size:.78rem; color:var(--text-mid); line-height:1.35; }
+    .qbe-view-opt.correct .qbe-view-opt-text { color:#059669; font-weight:600; }
+    .qbe-view-grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+    .qbe-modal-divider { height:1.5px; background:var(--border); }
+
+    .qbe-modal-field label { display:block; font-size:.75rem; font-weight:600; color:var(--text-mid); margin-bottom:5px; }
+    .qbe-modal-field textarea, .qbe-modal-field input[type="text"], .qbe-modal-field input[type="number"], .qbe-modal-field select { width:100%; padding:9px 12px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:'DM Sans',sans-serif; font-size:.83rem; color:var(--text); background:#fafbfd; transition:var(--transition); resize:vertical; }
+    .qbe-modal-field textarea:focus, .qbe-modal-field input:focus, .qbe-modal-field select:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 3px rgba(28,77,141,0.1); background:#fff; }
+    .qbe-opts-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .qbe-opt-field2 { display:flex; align-items:center; gap:7px; }
+    .qbe-opt-lbl2 { width:22px; height:22px; min-width:22px; background:var(--brand-light); border:1px solid rgba(28,77,141,0.2); color:var(--brand); font-size:.7rem; font-weight:700; border-radius:4px; display:flex; align-items:center; justify-content:center; }
+    .qbe-opt-field2 input { flex:1; padding:7px 10px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:'DM Sans',sans-serif; font-size:.8rem; color:var(--text); background:#fafbfd; transition:var(--transition); }
+    .qbe-opt-field2 input:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 3px rgba(28,77,141,0.1); }
+    .qbe-modal-footer { padding:13px 22px; border-top:1.5px solid var(--border); display:flex; justify-content:flex-end; gap:8px; }
+    .qbe-btn-cancel { padding:8px 18px; background:transparent; border:1.5px solid var(--border); border-radius:var(--radius-sm); color:var(--text-mid); font-family:'DM Sans',sans-serif; font-size:.82rem; font-weight:600; cursor:pointer; transition:var(--transition); }
+    .qbe-btn-cancel:hover { border-color:var(--brand); color:var(--brand); }
+    .qbe-btn-save { padding:8px 20px; background:var(--brand); color:#fff; border:none; border-radius:var(--radius-sm); font-family:'DM Sans',sans-serif; font-size:.82rem; font-weight:700; cursor:pointer; transition:var(--transition); display:flex; align-items:center; gap:6px; }
+    .qbe-btn-save:hover { background:#153f73; transform:translateY(-1px); }
+    .qbe-btn-save:disabled { background:#94a3b8; cursor:not-allowed; transform:none; }
+    .qbe-btn-nav { padding:9px 22px; border-radius:var(--radius-sm); font-family:'DM Sans',sans-serif; font-size:.85rem; font-weight:600; cursor:pointer; transition:var(--transition); display:flex; align-items:center; gap:7px; border:2px solid var(--border); background:#fff; color:var(--text-mid); }
+    .qbe-btn-nav:hover { border-color:var(--brand); color:var(--brand); }
+    .qbe-btn-nav.primary { background:var(--brand); color:#fff; border-color:var(--brand); }
+    .qbe-btn-nav.primary:hover { background:#153f73; border-color:#153f73; transform:translateY(-1px); }
+
+    .qbe-confirm-box { background:#fff; border-radius:var(--radius); box-shadow:var(--shadow-lg); width:100%; max-width:380px; padding:28px 24px; text-align:center; animation:qbe-modal-in .22s cubic-bezier(.4,0,.2,1); border-top:4px solid var(--accent); }
+    .qbe-confirm-icon { font-size:2.2rem; color:var(--accent); margin-bottom:12px; }
+    .qbe-confirm-title { font-family:'Fraunces',serif; font-size:1.1rem; font-weight:900; color:var(--text); margin-bottom:8px; }
+    .qbe-confirm-msg { font-size:.82rem; color:var(--text-mid); line-height:1.6; margin-bottom:20px; }
+    .qbe-confirm-btns { display:flex; gap:8px; justify-content:center; }
+    .qbe-btn-delete { padding:9px 22px; background:var(--accent); color:#fff; border:none; border-radius:var(--radius-sm); font-family:'DM Sans',sans-serif; font-size:.83rem; font-weight:700; cursor:pointer; transition:var(--transition); display:flex; align-items:center; gap:6px; }
+    .qbe-btn-delete:hover { background:#e05235; transform:translateY(-1px); }
+
+    .qbe-val-msg { font-size:.75rem; padding:8px 12px; border-radius:var(--radius-sm); display:none; align-items:center; gap:7px; margin-top:8px; }
+    .qbe-val-msg.error   { display:flex; background:#fef2f2; color:#dc2626; border:1px solid #fecaca; }
+    .qbe-val-msg.success { display:flex; background:var(--green-light); color:#059669; border:1px solid #a7f3d0; }
+
+    .qbe-toast { position:fixed; bottom:24px; right:24px; z-index:99999; padding:12px 18px; border-radius:var(--radius-sm); font-size:.82rem; font-weight:600; box-shadow:var(--shadow-lg); display:flex; align-items:center; gap:8px; max-width:340px; animation:qbe-toast-in .25s cubic-bezier(.4,0,.2,1); }
+    .qbe-toast.success { background:var(--green-light); border:1px solid rgba(46,204,141,.35); color:#059669; }
+    .qbe-toast.error   { background:var(--accent-light); border:1px solid rgba(240,100,73,.3);  color:#b84030; }
+    .qbe-toast.info    { background:var(--brand-light);  border:1px solid rgba(28,77,141,.25);  color:var(--brand); }
+    @keyframes qbe-toast-in { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
+
+    .qbe-hl { background:rgba(245,158,11,.25); color:#92400e; border-radius:2px; padding:0 1px; }
+    .qbe-no-data { text-align:center; padding:40px 20px; color:var(--text-soft); }
+    .qbe-no-data i { font-size:2rem; display:block; margin-bottom:10px; opacity:.3; }
+    @media(max-width:900px){ .qbe-filter-grid{grid-template-columns:repeat(2,1fr);} }
+    @media(max-width:580px){ .qbe-filter-grid{grid-template-columns:1fr;} }
+
+
+    /* ── Smart user dropdown: search mode pills ── */
+    .search-mode-bar {
+        display: flex;
+        gap: 5px;
+        padding: 8px 10px;
+        background: #f8fafc;
+        border-bottom: 1.5px solid #f1f5f9;
+    }
+    .mode-pill {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 5px 6px;
+        border-radius: 8px;
+        font-size: 0.68rem;
+        font-weight: 600;
+        color: #94a3b8;
+        background: #fff;
+        border: 1.5px solid #e2e8f0;
+        cursor: pointer;
+        transition: all 0.18s;
+        white-space: nowrap;
+        user-select: none;
+    }
+    .mode-pill:hover { border-color: var(--brand); color: var(--brand); }
+    .mode-pill.active {
+        background: var(--brand);
+        border-color: var(--brand);
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(28,77,141,0.25);
+    }
+    .mode-pill i { font-size: 0.65rem; }
+
+    .custom-option .opt-sub {
+        font-size: 0.63rem;
+        color: #b0bec5;
+        margin-top: 1px;
+    }
+    .custom-option .opt-main { font-weight: 600; font-size: 0.78rem; }
+    .custom-option .opt-body { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+
+    /* ── Custom searchable select ── */
+    .qbe-custom-select-wrap {
+        position: relative;
+        min-width: 150px;
+        user-select: none;
+        flex: 1;
+    }
+    .qbe-custom-select-trigger {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 8px 12px;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--text);
+        background: #fafbfd;
+        cursor: pointer;
+        transition: var(--transition);
+        white-space: nowrap;
+        overflow: hidden;
+        width: 100%;
+    }
+    .qbe-custom-select-trigger:hover,
+    .qbe-custom-select-wrap.open .qbe-custom-select-trigger {
+        border-color: var(--brand);
+        box-shadow: 0 0 0 3px rgba(28,77,141,0.1);
+        background: #fff;
+    }
+    .qbe-custom-select-trigger .trigger-text {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+    }
+    .qbe-custom-select-trigger .caret {
+        font-size: 0.62rem;
+        color: #94a3b8;
+        transition: transform 0.2s;
+        flex-shrink: 0;
+    }
+    .qbe-custom-select-wrap.open .caret { transform: rotate(180deg); }
+
+    .qbe-custom-select-dropdown {
+        display: none;
+        position: absolute;
+        right: 4px;
+        top: calc(100% + 5px);
+        min-width: 100%;
+        width: max-content;
+        max-width: 280px;
+        background: #fff;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-sm);
+        box-shadow: 0 8px 28px rgba(28,77,141,0.13);
+        z-index: 9999;
+        overflow: hidden;
+        animation: qbe-dropIn 0.15s cubic-bezier(.4,0,.2,1);
+    }
+    @keyframes qbe-dropIn {
+        from { opacity: 0; transform: translateY(-6px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .qbe-custom-select-wrap.open .qbe-custom-select-dropdown { display: block; }
+
+    .qbe-custom-select-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 12px;
+        border-bottom: 1.5px solid #f1f5f9;
+        background: #f8fafc;
+    }
+    .qbe-custom-select-search i { color: #94a3b8; font-size: 0.78rem; flex-shrink: 0; }
+    .qbe-custom-select-search input {
+        border: none;
+        outline: none;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.8rem;
+        color: var(--text);
+        background: transparent;
+        width: 100%;
+    }
+    .qbe-custom-select-search input::placeholder { color: #94a3b8; }
+
+    .qbe-custom-select-options {
+        max-height: 220px;
+        overflow-y: auto;
+        padding: 4px 0;
+    }
+    .qbe-custom-select-options::-webkit-scrollbar { width: 4px; }
+    .qbe-custom-select-options::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+
+    .qbe-custom-option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: var(--text-mid);
+        cursor: pointer;
+        transition: background 0.12s;
+    }
+    .qbe-custom-option:hover  { background: var(--brand-light); color: var(--brand); }
+    .qbe-custom-option.selected { background: var(--brand-light); color: var(--brand); font-weight: 700; }
+    .qbe-custom-option.hidden { display: none; }
+    .qbe-custom-option .opt-icon { font-size: 0.78rem; width: 16px; text-align: center; flex-shrink: 0; }
+    .qbe-custom-option .item-sn { font-size: 0.66rem; color: #94a3b8; margin-left: auto; flex-shrink: 0; }
+    .qbe-no-results-msg {
+        padding: 12px 14px;
+        font-size: 0.78rem;
+        color: #94a3b8;
+        text-align: center;
+        display: none;
+    }
+
+    /* Disabled state */
+    .qbe-custom-select-wrap.disabled .qbe-custom-select-trigger {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+    .qbe-header {
+    overflow: visible;
+}
+
+.qbe-header-bg {
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius);
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.qbe-header-bg::before {
+    content: '';
+    position: absolute;
+    right: -60px; top: -60px;
+    width: 260px; height: 260px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.qbe-header-bg::after {
+    content: '';
+    position: absolute;
+    right: 80px; bottom: -90px;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.qbe-header::before { display: none; }
+.qbe-header::after  { display: none; }
+
+.qbe-hdr-left,
+.qbe-hdr-right {
+    position: relative;
+    z-index: 1;
+}
+
+/* ── Help / Info button & popup ── */
+.qbe-help-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.qbe-help-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s, transform 0.2s;
+    font-family: 'DM Sans', sans-serif;
+    flex-shrink: 0;
+    backdrop-filter: blur(4px);
+    font-style: italic;
+}
+
+.qbe-help-btn:hover {
+    background: rgba(255, 255, 255, 0.28);
+    border-color: rgba(255, 255, 255, 0.9);
+    transform: scale(1.08);
+}
+
+.qbe-help-popup {
+    display: none;
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    width: 420px;
+    max-height: 700px;
+    overflow-y: auto;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 16px 56px rgba(28, 77, 141, 0.22), 0 2px 12px rgba(28, 77, 141, 0.1);
+    border: 1.5px solid #dde3ef;
+    z-index: 99999;
+    animation: qbe-popup-in 0.18s cubic-bezier(.4, 0, .2, 1);
+}
+
+.qbe-help-popup::-webkit-scrollbar { width: 5px; }
+.qbe-help-popup::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+.qbe-help-popup::-webkit-scrollbar-thumb { background: #c7d2e7; border-radius: 10px; }
+
+@keyframes qbe-popup-in {
+    from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.qbe-help-wrap:hover .qbe-help-popup,
+.qbe-help-wrap:focus-within .qbe-help-popup {
+    display: block;
+}
+
+/* ── Popup internals ── */
+.qbe-hp-head {
+    background: linear-gradient(135deg, #1C4D8D 0%, #2563b0 100%);
+    border-radius: 14px 14px 0 0;
+    padding: 16px 20px 14px;
+}
+
+.qbe-hp-head-title {
+    font-family: 'Fraunces', serif;
+    font-size: 1rem;
+    font-weight: 900;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 3px;
+}
+
+.qbe-hp-head-sub {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.qbe-hp-body {
+    padding: 16px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.qbe-hp-step {
+    border: 1.5px solid #dde3ef;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.qbe-hp-step-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #f8fafc;
+    border-bottom: 1.5px solid #dde3ef;
+}
+
+.qbe-hp-step-num {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    border-radius: 50%;
+    background: #1C4D8D;
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qbe-hp-step-num-green { background: #2ecc8d; }
+
+.qbe-hp-step-label {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #1a2340;
+    flex: 1;
+}
+
+.qbe-hp-step-tag {
+    font-size: 0.62rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: rgba(28, 77, 141, 0.1);
+    color: #1C4D8D;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.qbe-hp-step-tag-green {
+    background: rgba(46, 204, 141, 0.1);
+    color: #059669;
+}
+
+.qbe-hp-step-tag-amber {
+    background: rgba(245, 158, 11, 0.1);
+    color: #92400e;
+}
+
+.qbe-hp-step-body {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.qbe-hp-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    font-size: 0.78rem;
+    color: #4a5568;
+    line-height: 1.55;
+}
+
+.qbe-hp-dot {
+    width: 6px;
+    height: 6px;
+    min-width: 6px;
+    border-radius: 50%;
+    background: #1C4D8D;
+    margin-top: 6px;
+    flex-shrink: 0;
+}
+
+.qbe-hp-dot-green  { background: #2ecc8d; }
+.qbe-hp-dot-amber  { background: #d97706; }
+.qbe-hp-dot-accent { background: #F06449; }
+.qbe-hp-dot-purple { background: #7c5cbf; }
+
+.qbe-hp-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 4px;
+    vertical-align: middle;
+}
+
+.qbe-hp-chip-brand  { background: rgba(28, 77, 141, 0.1);   color: #1C4D8D; }
+.qbe-hp-chip-green  { background: rgba(46, 204, 141, 0.12); color: #059669; }
+.qbe-hp-chip-amber  { background: rgba(245, 158, 11, 0.1);  color: #92400e; }
+.qbe-hp-chip-accent { background: rgba(240, 100, 73, 0.1);  color: #c2410c; }
+.qbe-hp-chip-purple { background: rgba(124, 92, 191, 0.1);  color: #6d28d9; }
+
+.qbe-hp-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(240, 100, 73, 0.25);
+    background: rgba(240, 100, 73, 0.06);
+    font-size: 0.75rem;
+    color: #7c2d12;
+    line-height: 1.5;
+    margin-top: 4px;
+}
+
+.qbe-hp-note-icon {
+    color: #F06449;
+    font-size: 0.82rem;
+    margin-top: 1px;
+    flex-shrink: 0;
+}
+
+.qbe-hp-tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(28, 77, 141, 0.2);
+    background: rgba(28, 77, 141, 0.05);
+    font-size: 0.75rem;
+    color: #1e3a5f;
+    line-height: 1.5;
+    margin-top: 4px;
+}
+
+.qbe-hp-tip-icon {
+    color: #1C4D8D;
+    font-size: 0.82rem;
+    margin-top: 1px;
+    flex-shrink: 0;
+}
+
+.qbe-hp-divider {
+    height: 1px;
+    background: #dde3ef;
+    margin: 2px 0;
+}
+
+.qbe-hp-footer {
+    padding: 10px 20px 14px;
+    border-top: 1.5px solid #dde3ef;
+    font-size: 0.7rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.qbe-hp-check-icon { font-size: 0.65rem; }
+/* ── Fix: opt-body layout for qbe-custom-option ── */
+.qbe-custom-option .opt-body { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.qbe-custom-option .opt-main { font-weight: 600; font-size: 0.78rem; color: var(--text); }
+.qbe-custom-option .opt-sub  { font-size: 0.63rem; color: #b0bec5; margin-top: 1px; }
+.qbe-custom-option .item-sn  { font-size: 0.66rem; color: #94a3b8; margin-left: auto; flex-shrink: 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="qbe-header">
+    <div class="qbe-header-bg"></div>
+    <div class="qbe-hdr-left">
+        <h1><i class="fas fa-layer-group me-2"></i>Question Bank Explorer</h1>
+        <p>Search, filter &amp; manage your entire question library</p>
+    </div>
+    <div class="qbe-hdr-right">
+        <div class="qbe-stat-pill"><span class="val" id="totalQsCount">—</span>&nbsp;<span>Questions</span></div>
+        <div class="qbe-stat-pill"><span class="val" id="totalBanksCount">—</span>&nbsp;<span>Banks</span></div>
+        <div class="qbe-hdr-badge"><i class="fas fa-bolt"></i>AI Powered</div>
+
+        <!-- ── Help / How-to button ── -->
+        <div class="qbe-help-wrap">
+            <button class="qbe-help-btn" aria-label="How to use this page" tabindex="0">i</button>
+
+            <div class="qbe-help-popup" role="tooltip">
+
+                <div class="qbe-hp-head">
+                    <div class="qbe-hp-head-title">
+                        <i class="fas fa-layer-group"></i> How to Use Question Bank Explorer
+                    </div>
+                    <div class="qbe-hp-head-sub">Search, filter and manage your entire question library</div>
+                </div>
+
+                <div class="qbe-hp-body">
+
+                    <!-- Search -->
+                    <div class="qbe-hp-step">
+                        <div class="qbe-hp-step-head">
+                            <div class="qbe-hp-step-num">1</div>
+                            <div class="qbe-hp-step-label">Search by Keyword</div>
+                            <span class="qbe-hp-step-tag">Quick Start</span>
+                        </div>
+                        <div class="qbe-hp-step-body">
+                            <div class="qbe-hp-item">
+                                <div class="qbe-hp-dot"></div>
+                                <span>Use the <span class="qbe-hp-chip qbe-hp-chip-brand">Search Question Text / Keyword</span> field at the top to instantly find questions by any word in the question, options, answer, or generation keyword.</span>
+                            </div>
+                            <div class="qbe-hp-item">
+                                <div class="qbe-hp-dot"></div>
+                                <span>Press <strong>Enter</strong> or click <span class="qbe-hp-chip qbe-hp-chip-brand">Apply Filters</span> to run the search. Matching text is highlighted in yellow across all results.</span>
+                            </div>
+                            <div class="qbe-hp-item">
+                                <div class="qbe-hp-dot"></div>
+                                <span>You can also search inside a specific <span class="qbe-hp-chip qbe-hp-chip-accent">Source Document</span> — type the document name in the dedicated filter to narrow results to a single PDF source.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="qbe-hp-step">
+                        <div class="qbe-hp-step-head">
+                            <div class="qbe-hp-step-num">2</div>
+                            <div class="qbe-hp-step-label">Apply Filters</div>
+                            <span class="qbe-hp-step-tag">Narrow Down</span>
+                        </div>
+                        <div class="qbe-hp-step-body">
+                            <div class="qbe-hp-item">
+                                <div class="qbe-hp-dot qbe-hp-dot-amber"></div>
+                                <span><strong>Question Type</strong> — Click one or more type pills (<span class="qbe-hp-chip qbe-hp-chip-brand">MCQ</span> <span class="qbe-hp-chip qbe-hp-chip-green">True/False</span> <span class="qbe-hp-chip qbe-hp-chip-amber">Fill in Blank</span> <span class="qbe-hp-chip qbe-hp-chip-purple">Short Answer</span> <span class="qbe-hp-chip qbe-hp-chip-accent">Descriptive</span>) to filter by question format.</span>
+                            </div>
+                            <div class="qbe-hp-item">
+                                <div class="qbe-hp-dot qbe-hp-dot-amber"></div>
+                                <span><strong>Difficulty</strong> — Select <span class="qbe-hp-chip qbe-hp-chip-brand">Easy</span>, <span class="qbe-hp-chip qbe-hp-chip-amber">Medium</span>, or <span class="qbe-hp-chip qbe-hp-chip-accent">Hard</span> pills to show only questions at that difficulty level. Multiple pills can be active at once.</span>
+                            </div>
+                            <div class="qbe-hp-item">
+                                <div class="qbe-hp-dot qbe-hp-dot-amber"></div>
+                                <span><strong>Course</strong> — Pick a course from the dropdown to show only questions linked to documents from that course.</span>
+                            </div>
+                            <div class="qbe-hp-item">
+                                <div class="qbe-hp-dot qbe-hp-dot-amber"></div>
+                                <span><strong>Marks Range</strong> — Enter a Min and/or Max value to filter by how many marks each question carries.</span>
+                            </div>
+                            <div class="qbe-hp-item">
+                                <div class="qbe-hp-dot qbe-hp-dot-amber"></div>
+                                <span><strong>Date Range</strong> — Use the From / To date pickers to show questions created within a specific time window.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Admin-only filters -->
+                    <div class="qbe-hp-step">
+                        <div class="qbe-hp-step-head">
+                            <div class="qbe-hp-step-num qbe-hp-step-num-green"><i class="fas fa-shield-alt qbe-hp-check-icon"></i></div>
+                            <div class="qbe-hp-step-label">Admin-Only Filters</div>
+                            <span class="qbe-hp-step-tag qbe-hp-step-tag-amber">Admins Only</span>
+                        </div>
+                        <div class="qbe-hp-step-body">
+                            <div class="qbe-hp-item">
+                                <div class="qbe-hp-dot qbe-hp-dot-purple"></div>
+                                <span><strong>Filter By Role</strong> — Admins and Super Admins see a smart <span class="qbe-hp-chip qbe-hp-chip-purple">Role</span> dropdown. Select a role (Super Admin, Admin, Instructor, Student) to view only questions created by users with that role.</span>
+                            </div>
+                            <div class="qbe-hp-item">
+                                <div class="qbe-hp-dot qbe-hp-dot-purple"></div>
+                                <span><strong>Created By (User)</strong> — Once a role is selected, a searchable <span class="qbe-hp-chip qbe-hp-chip-purple">User</span> dropdown loads all users with that role. You can search by <strong>Full Name</strong>, <strong>Username</strong>, or <strong>IC Number</strong> using the mode pills inside the dropdown.</span>
+                            </div>
+                            <div class="qbe-hp-note">
+                                <i class="fas fa-info-circle qbe-hp-note-icon"></i>
+                                <span>Instructors and students can only see questions from their own question banks. Role and User filters are not shown to them.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active filters & chips -->
+                    <div class="qbe-hp-step">
+                        <div class="qbe-hp-step-head">
+                            <div class="qbe-hp-step-num">3</div>
+                            <div class="qbe-hp-step-label">Review Active Filters</div>
+                            <span class="qbe-hp-step-tag">Filter Chips</span>
+                        </div>
+                        <div class="qbe-hp-step-body">
+                            <div class="qbe-hp-item">
+                                <div class="qbe-hp-dot"></div>
+                                <span>Every active filter appears as a chip row below the filter grid. Click the <strong>✕</strong> on any chip to remove that single filter instantly without resetting everything else.</span>
+                            </div>
+                            <div class="qbe-hp-item">
+                                <div class="qbe-hp-dot"></div>
+                                <span>The badge next to the title (e.g. <em>3 filters active</em>) shows you at a glance how many filters are currently applied.</span>
+                            </div>
+                            <div class="qbe-hp-item">
+                                <div class="qbe-hp-dot"></div>
+                                <span>Click <span class="qbe-hp-chip qbe-hp-chip-accent">Clear All</span> in the chip row, or the <span class="qbe-hp-chip qbe-hp-chip-brand">Reset</span> button, to remove all filters at once and return to the full question list.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Question cards & actions -->
+                    <div class="qbe-hp-step">
+                        <div class="qbe-hp-step-head">
+                            <div class="qbe-hp-step-num">4</div>
+                            <div class="qbe-hp-step-label">View, Edit &amp; Delete Questions</div>
+                            <span class="qbe-hp-step-tag">Actions</span>
+                        </div>
+                        <div class="qbe-hp-step-body">
+                            <div class="qbe-hp-item">
+                                <div class="qbe-hp-dot qbe-hp-dot-green"></div>
+                                <span>Each question card shows the <strong>type badge</strong>, <strong>difficulty badge</strong>, and <strong>marks</strong> at the top. MCQ options and their correct answer are shown inline.</span>
+                            </div>
+                            <div class="qbe-hp-item">
+                                <div class="qbe-hp-dot qbe-hp-dot-green"></div>
+                                <span>Click the <span class="qbe-hp-chip qbe-hp-chip-brand"><i class="fas fa-eye"></i> View</span> button to open a full-detail modal — shows the question text, all options, correct answer, bank name, course, created-by, and all source documents the question was generated from.</span>
+                            </div>
+                            <div class="qbe-hp-item">
+                                <div class="qbe-hp-dot qbe-hp-dot-green"></div>
+                                <span>Click <span class="qbe-hp-chip qbe-hp-chip-brand"><i class="fas fa-edit"></i> Edit</span> to modify the question text, options, correct answer, marks, or difficulty. Changes are saved directly to the database.</span>
+                            </div>
+                            <div class="qbe-hp-item">
+                                <div class="qbe-hp-dot qbe-hp-dot-accent"></div>
+                                <span>Click <span class="qbe-hp-chip qbe-hp-chip-accent"><i class="fas fa-trash"></i> Delete</span> to permanently remove a question. A confirmation prompt appears before deletion.</span>
+                            </div>
+                            <div class="qbe-hp-note">
+                                <i class="fas fa-exclamation-triangle qbe-hp-note-icon"></i>
+                                <span>Edit and Delete are only available on questions from your own banks. Admins can edit and delete any question.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- View modes & sorting -->
+                    <div class="qbe-hp-step">
+                        <div class="qbe-hp-step-head">
+                            <div class="qbe-hp-step-num">5</div>
+                            <div class="qbe-hp-step-label">Sort, View &amp; Paginate</div>
+                            <span class="qbe-hp-step-tag">Layout</span>
+                        </div>
+                        <div class="qbe-hp-step-body">
+                            <div class="qbe-hp-item">
+                                <div class="qbe-hp-dot"></div>
+                                <span>Use the <span class="qbe-hp-chip qbe-hp-chip-brand">Sort by</span> dropdown to order results by newest, oldest, marks (high/low), type, difficulty, or bank name.</span>
+                            </div>
+                            <div class="qbe-hp-item">
+                                <div class="qbe-hp-dot"></div>
+                                <span>Toggle between <span class="qbe-hp-chip qbe-hp-chip-brand"><i class="fas fa-th-large"></i> Grid</span> and <span class="qbe-hp-chip qbe-hp-chip-brand"><i class="fas fa-list"></i> List</span> view using the buttons in the toolbar. List view also supports column sorting by clicking the table headers.</span>
+                            </div>
+                            <div class="qbe-hp-item">
+                                <div class="qbe-hp-dot"></div>
+                                <span>Results are paginated at 24 questions per page. Use the page buttons at the bottom to navigate, or click a specific page number to jump directly there.</span>
+                            </div>
+                            <div class="qbe-hp-tip">
+                                <i class="fas fa-info-circle qbe-hp-tip-icon"></i>
+                                <span>The toolbar always shows <em>Showing X of Y questions</em> — the first number reflects active filters, the second is the total loaded.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="qbe-hp-footer">
+                    <i class="fas fa-info-circle"></i>
+                    Hover away from this panel to close it.
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FILTER CARD -->
+<div class="qbe-card">
+    <div class="qbe-card-title">
+        <span class="qbe-step-tag">FILTERS</span>
+        <i class="fas fa-sliders-h"></i>
+        Advanced Filters
+        <span id="filterCountBadge" style="background:var(--accent);color:#fff;font-size:.65rem;font-weight:800;padding:2px 8px;border-radius:20px;display:none;margin-left:auto;"></span>
+    </div>
+
+    <div class="qbe-filter-grid">
+
+        <!-- Search -->
+        <div class="qbe-filter-item qbe-fg-full">
+            <label><i class="fas fa-search" style="margin-right:4px;color:var(--brand);"></i>Search Question Text / Keyword</label>
+            <input type="text" id="fKeyword" placeholder="e.g. Newton's law, photosynthesis…" autocomplete="off">
+        </div>
+
+        <!-- Question Type pills -->
+        <div class="qbe-filter-item" style="grid-column:span 2;">
+            <label><i class="fas fa-list-alt" style="margin-right:4px;color:var(--brand);"></i>Question Type</label>
+            <div class="qbe-pill-group" id="fTypeGroup">
+                <div class="qbe-pill-opt" data-val="mcq">MCQ</div>
+                <div class="qbe-pill-opt" data-val="tf">True / False</div>
+                <div class="qbe-pill-opt" data-val="fitb">Fill in Blank</div>
+                <div class="qbe-pill-opt" data-val="sa">Short Answer</div>
+                <div class="qbe-pill-opt" data-val="desc">Descriptive</div>
+            </div>
+        </div>
+
+        <!-- Difficulty pills -->
+        <div class="qbe-filter-item" style="grid-column:span 2;">
+            <label><i class="fas fa-signal" style="margin-right:4px;color:var(--brand);"></i>Difficulty</label>
+            <div class="qbe-pill-group" id="fDiffGroup">
+                <div class="qbe-pill-opt diff-easy"   data-val="easy">Easy</div>
+                <div class="qbe-pill-opt diff-medium" data-val="medium">Medium</div>
+                <div class="qbe-pill-opt diff-hard"   data-val="hard">Hard</div>
+            </div>
+        </div>
+
+        <!-- Course — ALL users -->
+        <div class="qbe-filter-item">
+            <label><i class="fas fa-graduation-cap" style="margin-right:4px;color:var(--brand);"></i>Course</label>
+            <select id="fCourse">
+                <option value="">All Courses</option>
+                {% for c in courses %}<option value="{{ c.name }}">{{ c.name }}</option>{% endfor %}
+            </select>
+        </div>
+
+        <!-- Role — smart custom dropdown -->
+        {% if is_elevated %}
+        <div class="qbe-filter-item">
+            <label><i class="fas fa-shield-alt" style="margin-right:4px;color:var(--purple);"></i>Filter By Role</label>
+            <div class="qbe-custom-select-wrap" id="qbeRoleSelectWrap">
+                <div class="qbe-custom-select-trigger" onclick="qbeToggleDropdown('qbeRoleSelectWrap')">
+                    <span class="trigger-text" id="qbeRoleTriggerText">🎭 All Roles</span>
+                    <i class="fas fa-chevron-down caret"></i>
+                </div>
+                <div class="qbe-custom-select-dropdown">
+                    <div class="qbe-custom-select-search">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search role…"
+                        oninput="qbeFilterOptions('qbeRoleSelectWrap', this.value)"
+                        autocomplete="off">
+                    </div>
+                    <div class="qbe-custom-select-options" id="qbeRoleOptionsList"></div>
+                </div>
+            </div>
+            <!-- Hidden value carriers read by existing filter logic -->
+            <input type="hidden" id="fRole" value="">
+        </div>
+        
+        <!-- User — smart custom dropdown with mode pills -->
+        <div class="qbe-filter-item">
+            <label><i class="fas fa-user" style="margin-right:4px;color:var(--brand);"></i>Created By (User)</label>
+            <div class="qbe-custom-select-wrap disabled" id="qbeUserSelectWrap">
+                <div class="qbe-custom-select-trigger" onclick="qbeToggleDropdown('qbeUserSelectWrap')">
+                    <span class="trigger-text" id="qbeUserTriggerText">👥 All Users</span>
+                    <i class="fas fa-chevron-down caret"></i>
+                </div>
+                <div class="qbe-custom-select-dropdown" style="min-width:260px;">
+                    <div class="search-mode-bar">
+                        <label class="mode-pill active" data-mode="full_name">
+                            <input type="radio" name="qbeUserSearchMode" value="full_name" checked hidden>
+                            <i class="fas fa-id-badge"></i> Full Name
+                        </label>
+                        <label class="mode-pill" data-mode="username">
+                            <input type="radio" name="qbeUserSearchMode" value="username" hidden>
+                            <i class="fas fa-at"></i> Username
+                        </label>
+                        <label class="mode-pill" data-mode="service_number">
+                            <input type="radio" name="qbeUserSearchMode" value="service_number" hidden>
+                            <i class="fas fa-hashtag"></i> IC No.
+                        </label>
+                    </div>
+                    <div class="qbe-custom-select-search">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="qbeUserSearchInput" placeholder="Search by full name…"
+                        oninput="qbeFilterUserOptions(this.value)"
+                            autocomplete="off">
+                    </div>
+                    <div class="qbe-custom-select-options" id="qbeUserOptionsList">
+                        <div class="qbe-no-results-msg" style="display:block;">Select a role first</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Hidden value carrier read by existing filter logic -->
+            <input type="hidden" id="fUser" value="">
+        </div>
+        {% endif %}
+
+        <!-- Source Document -->
+        <div class="qbe-filter-item">
+            <label><i class="fas fa-file-pdf" style="margin-right:4px;color:var(--accent);"></i>Source Document</label>
+            <input type="text" id="fSourceDoc" placeholder="Document name contains…">
+        </div>
+
+        <!-- Marks range -->
+        <div class="qbe-filter-item">
+            <label><i class="fas fa-star" style="margin-right:4px;color:var(--amber);"></i>Marks Per Question</label>
+            <div class="qbe-range-row">
+                <input type="number" id="fMarksMin" placeholder="Min" min="1" max="100">
+                <span class="qbe-range-sep">—</span>
+                <input type="number" id="fMarksMax" placeholder="Max" min="1" max="100">
+            </div>
+        </div>
+
+        <!-- Date range -->
+        <div class="qbe-filter-item">
+            <label><i class="fas fa-calendar-alt" style="margin-right:4px;color:var(--brand);"></i>Date Range</label>
+            <div class="qbe-range-row">
+                <input type="date" id="fDateFrom">
+                <span class="qbe-range-sep">to</span>
+                <input type="date" id="fDateTo">
+            </div>
+        </div>
+
+    </div>
+
+    <div class="qbe-chips-row empty" id="activeChips"></div>
+
+    <div class="qbe-filter-actions">
+        <div class="qbe-filter-info">
+            <i class="fas fa-filter" style="font-size:.72rem;"></i>
+            <span id="filterInfoText">No filters active</span>
+            <span class="qbe-fcnt" id="filterCnt">0</span>
+        </div>
+        <div class="qbe-filter-btns">
+            <button class="qbe-btn-nav" id="btnReset"><i class="fas fa-undo"></i> Reset</button>
+            <button class="qbe-btn-nav primary" id="btnApply"><i class="fas fa-search"></i> Apply Filters</button>
+        </div>
+    </div>
+</div>
+
+<!-- TOOLBAR -->
+<div class="qbe-toolbar">
+    <div class="qbe-results-count">Showing <strong id="shownCount">0</strong> of <strong id="totalCount">0</strong> questions</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div class="qbe-sort-wrap">
+            <label>Sort by:</label>
+            <select class="qbe-sort-select" id="sortSelect">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="marks-desc">Marks (High → Low)</option>
+                <option value="marks-asc">Marks (Low → High)</option>
+                <option value="type">Question Type</option>
+                <option value="difficulty">Difficulty</option>
+                <option value="bank">Bank Name</option>
+            </select>
+        </div>
+        <div class="qbe-view-toggle">
+            <button class="qbe-view-btn active" id="viewGrid" title="Grid View"><i class="fas fa-th-large"></i></button>
+            <button class="qbe-view-btn" id="viewList" title="List View"><i class="fas fa-list"></i></button>
+        </div>
+    </div>
+</div>
+
+<div class="qbe-loading" id="loadingState"><div class="qbe-spinner"></div><span>Loading question banks…</span></div>
+<div class="qbe-empty" id="emptyState"><i class="fas fa-search"></i><p id="emptyMsg">No questions match your filters.</p></div>
+
+<div class="qbe-grid" id="gridView"></div>
+
+<div class="qbe-list-wrap" id="listView" style="display:none;">
+    <table class="qbe-list-table">
+        <thead>
+            <tr>
+                <th style="width:3%">#</th>
+                <th style="width:25%" class="sortable" data-col="question">Question</th>
+                <th style="width:9%"  class="sortable" data-col="type">Type</th>
+                <th style="width:9%"  class="sortable" data-col="difficulty">Difficulty</th>
+                <th style="width:5%"  class="sortable" data-col="marks">Marks</th>
+                <th style="width:13%">Correct Answer</th>
+                <th style="width:14%" class="sortable" data-col="bank">Bank</th>
+                <th style="width:10%" class="sortable" data-col="created_by">Created By</th>
+                <th style="width:8%"  class="sortable" data-col="date">Date</th>
+                <th style="width:8%">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="listBody"></tbody>
+    </table>
+    <div class="qbe-no-data" id="listEmpty" style="display:none;"><i class="fas fa-inbox"></i><p>No questions found</p></div>
+</div>
+
+<div class="qbe-pagination" id="paginationWrap" style="display:none;">
+    <div class="qbe-pagination-info" id="paginationInfo"></div>
+    <div class="qbe-page-btns" id="pageButtons"></div>
+</div>
+
+<!-- VIEW MODAL -->
+<div class="qbe-modal-overlay" id="viewModal">
+    <div class="qbe-modal">
+        <div class="qbe-modal-hdr">
+            <h3><i class="fas fa-eye"></i> <span id="vmTitle">Question Detail</span></h3>
+            <button class="qbe-modal-close" id="vmClose"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="qbe-modal-body" id="vmBody"></div>
+    </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="qbe-modal-overlay" id="editModal">
+    <div class="qbe-modal">
+        <div class="qbe-modal-hdr">
+            <h3><i class="fas fa-edit"></i> Edit Question</h3>
+            <button class="qbe-modal-close" id="emClose"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="qbe-modal-body">
+            <input type="hidden" id="emQIdx"><input type="hidden" id="emQId"><input type="hidden" id="emQType">
+            <div class="qbe-modal-field">
+                <label>Question Text <span style="color:var(--accent)">*</span></label>
+                <textarea id="emQText" rows="3" placeholder="Enter question…"></textarea>
+            </div>
+            <div class="qbe-modal-field" id="emOptionsWrap">
+                <label>Options</label>
+                <div class="qbe-opts-grid2">
+                    <div class="qbe-opt-field2"><div class="qbe-opt-lbl2">A</div><input type="text" id="emOptA" placeholder="Option A"></div>
+                    <div class="qbe-opt-field2"><div class="qbe-opt-lbl2">B</div><input type="text" id="emOptB" placeholder="Option B"></div>
+                    <div class="qbe-opt-field2"><div class="qbe-opt-lbl2">C</div><input type="text" id="emOptC" placeholder="Option C"></div>
+                    <div class="qbe-opt-field2"><div class="qbe-opt-lbl2">D</div><input type="text" id="emOptD" placeholder="Option D"></div>
+                </div>
+            </div>
+            <div class="qbe-modal-field" id="emAnswerWrap">
+                <label>Correct Answer <span style="color:var(--accent)">*</span></label>
+                <input type="text" id="emAnswerInput" placeholder="e.g. A / True / keyword">
+                <textarea id="emAnswerTextarea" rows="3" placeholder="Detailed answer…" style="display:none;margin-top:6px;"></textarea>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="qbe-modal-field"><label>Marks</label><input type="number" id="emMarks" min="1" max="100" value="1"></div>
+                <div class="qbe-modal-field"><label>Difficulty</label><select id="emDifficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></div>
+            </div>
+            <div class="qbe-val-msg" id="emValMsg"><i class="fas fa-exclamation-circle"></i> <span></span></div>
+        </div>
+        <div class="qbe-modal-footer">
+            <button class="qbe-btn-cancel" id="emCancel">Cancel</button>
+            <button class="qbe-btn-save" id="emSave"><i class="fas fa-save"></i> Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- CONFIRM DELETE -->
+<div class="qbe-modal-overlay" id="confirmModal">
+    <div class="qbe-confirm-box">
+        <div class="qbe-confirm-icon"><i class="fas fa-trash-alt"></i></div>
+        <div class="qbe-confirm-title">Delete Question?</div>
+        <div class="qbe-confirm-msg" id="confirmMsg">This will permanently remove this question.</div>
+        <div class="qbe-confirm-btns">
+            <button class="qbe-btn-cancel" id="confirmCancel">Cancel</button>
+            <button class="qbe-btn-delete" id="confirmDelete"><i class="fas fa-trash"></i> Delete</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Server-side context ──────────────────────────────────────────────────
+var IS_ELEVATED  = {{ is_elevated|yesno:"true,false" }};
+var CURRENT_USER = "{{ request.user.username }}";
+var CURRENT_FULL = "{{ request.user.get_full_name|default:request.user.username }}";
+var QBE_API_ROLES_URL      = "{% url 'dashboard:api_roles' %}";
+var QBE_API_USERS_ROLE_URL = "{% url 'dashboard:api_users_by_role' %}";
+var QBE_ROLE_USERS = []; 
+var URLS = {
+    bankList:   "{% url 'question_generation:question_bank_list' %}",
+    bankDetail: "{% url 'question_generation:question_bank_detail' bank_id=0 %}".replace('/0/','/'),
+    updateQ:    "{% url 'question_generation:ajax_update_question' %}",
+    deleteQ:    "{% url 'question_generation:ajax_delete_question' %}",
+    users:      "{% url 'question_generation:ajax_get_users' %}",
+    docCourseMap: "{% url 'question_generation:ajax_doc_course_map' %}",
+};
+
+var TYPE_LABELS = {mcq:'Multiple Choice',tf:'True / False',fitb:'Fill in Blank',sa:'Short Answer',desc:'Descriptive'};
+var DIFF_LABELS = {easy:'Easy',medium:'Medium',hard:'Hard'};
+var ROLE_LABELS = {superadmin:'Super Admin',admin:'Admin',instructor:'Instructor',student:'Student'};
+var PAGE_SIZE   = 24;
+
+// ALL_USERS loaded for EVERYONE — required for role/user filter
+var ALL_USERS = [];
+
+var state = {
+    allQuestions:[], filtered:[], page:1, viewMode:'grid',
+    editTargetIdx:null, deleteTargetQ:null,
+    fKeyword:'', fTypes:[], fDiffs:[],
+    fCourse:'', fRole:'', fUser:'',
+    fSourceDoc:'', fMarksMin:'', fMarksMax:'',
+    fDateFrom:'', fDateTo:''
+};
+
+// ── Utilities ──────────────────────────────────────────────────────────
+function getCsrf(){var n='csrftoken',v=null;document.cookie.split(';').forEach(function(c){var p=c.trim().split('=');if(p[0]===n)v=decodeURIComponent(p[1]);});if(!v){var i=document.querySelector('[name=csrfmiddlewaretoken]');if(i)v=i.value;}return v||'';}
+function esc(t){if(!t)return'';var d=document.createElement('div');d.textContent=t;return d.innerHTML;}
+function trunc(t,n){if(!t)return'';return t.length>n?t.substring(0,n)+'…':t;}
+function postJSON(url,data){return fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},body:JSON.stringify(data)}).then(function(r){return r.json();});}
+function hl(text,kw){if(!kw||!text)return esc(text||'');var e=esc(text);var k=esc(kw).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');return e.replace(new RegExp('('+k+')','gi'),'<span class="qbe-hl">$1</span>');}
+function toast(msg,type){var t=document.createElement('div');t.className='qbe-toast '+(type||'info');t.innerHTML='<i class="fas '+(type==='success'?'fa-check-circle':type==='error'?'fa-exclamation-circle':'fa-info-circle')+'"></i>'+esc(msg);document.body.appendChild(t);setTimeout(function(){t.remove();},3500);}
+
+function canEdit(q){
+    if(IS_ELEVATED) return true;
+    var cb=(q.created_by||'').toLowerCase().trim();
+    return cb===CURRENT_USER.toLowerCase()||cb===CURRENT_FULL.toLowerCase();
+}
+function loadAllData(){
+    showLoading();
+    {% comment %} loadUsers(); {% endcomment %}
+
+    // Fetch doc→course map first, then load banks
+    fetch(URLS.docCourseMap).then(function(r){return r.json();}).then(function(mapResult){
+        var docCourseMap = mapResult.data || {};  // {doc_name: course_name}
+
+        fetch(URLS.bankList).then(function(r){return r.json();}).then(function(result){
+            if(result.status!=='success'){hideLoading();showEmpty('Failed to load data.');return;}
+            var banks = result.data||[];
+            document.getElementById('totalBanksCount').textContent = banks.length;
+            if(!banks.length){hideLoading();showEmpty('No question banks found.');document.getElementById('totalQsCount').textContent=0;return;}
+
+            var promises = banks.map(function(b){
+                return fetch(URLS.bankDetail+b.id+'/').then(function(r){return r.json();}).then(function(r){
+                    if(r.status==='success'){
+                        var bankCourse = (r.bank && r.bank.course) ? r.bank.course : (b.course||'');
+                        if(bankCourse==='—') bankCourse='';
+
+                        return (r.questions||[]).map(function(q){
+                            // Resolve course from source_documents if bank-level course is empty
+  var qCourse = bankCourse;
+if(!qCourse && q.source_documents){
+    try{
+        var srcs = JSON.parse(q.source_documents || '[]');
+        for(var i=0;i<srcs.length;i++){
+            var courses = docCourseMap[srcs[i]];  // now an array
+            if(courses && courses.length > 0){
+                qCourse = courses[0];  // take first course
+                break;
+            }
+        }
+    }catch(e){}
+}
+return Object.assign({},q,{
+    bank_id:    b.id,
+    bank_title: r.bank.title,
+    bank_kw:    r.bank.keyword||'',
+    created_by: r.bank.created_by||'',
+    course:     qCourse,          // primary course string for display
+    all_courses: (function(){     // ALL courses this question's docs belong to
+        var allC = [];
+        try{
+            var srcs2 = JSON.parse(q.source_documents || '[]');
+            srcs2.forEach(function(s){
+                var cs = docCourseMap[s];
+                if(cs) cs.forEach(function(c){ if(allC.indexOf(c)===-1) allC.push(c); });
+            });
+        }catch(e){}
+        return allC;
+    })(),
+    created_at: b.created_at||''
+});
+                        });
+                    }
+                    return [];
+                }).catch(function(){return [];});
+            });
+
+            Promise.all(promises).then(function(results){
+                state.allQuestions = [].concat.apply([],results);
+                document.getElementById('totalQsCount').textContent = state.allQuestions.length;
+                applyFilters();
+                hideLoading();
+            }).catch(function(){hideLoading();showEmpty('Failed to load questions.');});
+
+        }).catch(function(){hideLoading();showEmpty('Network error.');});
+    }).catch(function(){
+        // If doc-course map fails, proceed without it
+        loadAllData_noCourseMap();
+    });
+}
+
+// ── Load users — called for ALL roles ─────────────────────────────────
+function loadUsers(){
+    fetch(URLS.users).then(function(r){return r.json();}).then(function(result){
+        ALL_USERS = result.data||[];
+        // ALL_USERS still used by role/user filter matching logic in applyFilters()
+        // The visual dropdowns are now handled by the smart custom dropdowns above
+    }).catch(function(){});
+}
+
+function populateUserDropdown(roleFilter){
+    var sel = document.getElementById('fUser');
+    if(!sel) return;
+    var currentVal = sel.value;
+    sel.innerHTML = '<option value="">All Users</option>';
+    var filtered = roleFilter
+        ? ALL_USERS.filter(function(u){return (u.role||'').toLowerCase()===roleFilter.toLowerCase();})
+        : ALL_USERS;
+    filtered.forEach(function(u){
+        var o = document.createElement('option');
+        o.value = u.full_name||u.username;
+        var rl = u.role?' ('+(ROLE_LABELS[u.role]||u.role)+')':'';
+        o.textContent = (u.full_name||u.username)+rl;
+        sel.appendChild(o);
+    });
+    if(currentVal && filtered.some(function(u){return (u.full_name||u.username)===currentVal;})){
+        sel.value = currentVal;
+    } else {
+        sel.value = '';
+    }
+}
+
+// ── Filters ────────────────────────────────────────────────────────────
+function getActivePills(id){var g=document.getElementById(id);if(!g)return[];return Array.from(g.querySelectorAll('.qbe-pill-opt.active')).map(function(p){return p.dataset.val;});}
+
+function readFilters(){
+    function val(id){ var el = document.getElementById(id); return el ? el.value : ''; }
+    state.fKeyword   = val('fKeyword').trim().toLowerCase();
+    state.fTypes     = getActivePills('fTypeGroup');
+    state.fDiffs     = getActivePills('fDiffGroup');
+    state.fCourse    = val('fCourse').trim();
+    state.fRole      = val('fRole').toLowerCase().trim();
+    state.fUser      = val('fUser').toLowerCase().trim();
+    state.fSourceDoc = val('fSourceDoc').trim().toLowerCase();
+    state.fMarksMin  = parseInt(val('fMarksMin'))||'';
+    state.fMarksMax  = parseInt(val('fMarksMax'))||'';
+    state.fDateFrom  = val('fDateFrom');
+    state.fDateTo    = val('fDateTo');
+}
+
+function applyFilters(){
+    readFilters();
+    var f = state.allQuestions.filter(function(q){
+
+        // Keyword
+        if(state.fKeyword){
+            var h=[q.question||q.question_text||'',q.option_A||'',q.option_B||'',q.option_C||'',q.option_D||'',q.correct_answer||'',q.bank_kw||''].join(' ').toLowerCase();
+            if(!h.includes(state.fKeyword)) return false;
+        }
+
+        // Type
+        if(state.fTypes.length && !state.fTypes.includes((q.type||q.question_type||'').toLowerCase())) return false;
+
+        // Difficulty
+        if(state.fDiffs.length && !state.fDiffs.includes((q.difficulty||'').toLowerCase())) return false;
+
+        // ══ COURSE FILTER — fixed ══
+        // q.course is the bank's course name string (e.g. "Physics 101")
+        // state.fCourse is the option value from the <select> — also c.name
+        // A bank can be linked to a course directly OR via leg/chapter etc.
+        // We compare trimmed lowercase to avoid whitespace/case mismatches.
+// COURSE FILTER — check all courses this question belongs to
+if(state.fCourse){
+    var fc = state.fCourse.trim().toLowerCase();
+    var qc = (q.course||'').trim().toLowerCase();
+    // Also check all_courses array
+    var allC = q.all_courses || [];
+    var matchesCourse = (qc === fc) || allC.some(function(c){
+        return c.trim().toLowerCase() === fc;
+    });
+    if(!matchesCourse) return false;
+}
+
+        // ══ ROLE FILTER — works for ALL users ══
+        // Look up the question's created_by in ALL_USERS to get their role
+        if(state.fRole){
+            var cb = (q.created_by||'').toLowerCase();
+            var matchedInRole = QBE_ROLE_USERS.some(function(u){
+                return (u.full_name||'').toLowerCase() === cb
+                    || (u.username||'').toLowerCase() === cb;
+            });
+            if(!matchedInRole) return false;
+        }
+
+        // User (created_by contains)
+        if(state.fUser && !(q.created_by||'').toLowerCase().includes(state.fUser)) return false;
+
+        // Source doc
+        if(state.fSourceDoc){
+            var srcs=[];
+            try{srcs=JSON.parse(q.source_documents||'[]');}catch(e){}
+            if(!srcs.join(' ').toLowerCase().includes(state.fSourceDoc)) return false;
+        }
+
+        // Marks range
+        if(state.fMarksMin!=='' && (q.marks||1)<state.fMarksMin) return false;
+        if(state.fMarksMax!=='' && (q.marks||1)>state.fMarksMax) return false;
+
+        // Date range
+        if(state.fDateFrom||state.fDateTo){
+            var raw=q.created_at||'';
+            if(raw){
+                // Format from server: DD/MM/YYYY HH:MM
+                var parts=raw.split(' ')[0].split('/');
+                if(parts.length===3){
+                    var d=new Date(parseInt(parts[2]),parseInt(parts[1])-1,parseInt(parts[0]));
+                    if(state.fDateFrom && d<new Date(state.fDateFrom)) return false;
+                    if(state.fDateTo   && d>new Date(state.fDateTo))   return false;
+                }
+            }
+        }
+
+        return true;
+    });
+
+    sortQ(f);
+    state.filtered = f;
+    state.page = 1;
+    renderPage();
+    renderChips();
+    updateBadge();
+}
+
+function resetFilters(){
+    document.getElementById('fKeyword').value='';
+    document.querySelectorAll('.qbe-pill-opt.active').forEach(function(p){p.classList.remove('active');});
+    document.getElementById('fCourse').value='';
+    document.getElementById('fRole').value='';
+    document.getElementById('fUser').value='';
+    document.getElementById('fSourceDoc').value='';
+    document.getElementById('fMarksMin').value='';
+    document.getElementById('fMarksMax').value='';
+    document.getElementById('fDateFrom').value='';
+    document.getElementById('fDateTo').value='';
+    populateUserDropdown('');
+    applyFilters();
+}
+
+function renderChips(){
+    var container=document.getElementById('activeChips');
+    var chips=[];
+    function add(lbl,fn){chips.push({lbl:lbl,fn:fn});}
+    if(state.fKeyword)   add('Keyword: "'+state.fKeyword+'"',function(){document.getElementById('fKeyword').value='';applyFilters();});
+    state.fTypes.forEach(function(t){add('Type: '+(TYPE_LABELS[t]||t),function(){togglePill('fTypeGroup',t);applyFilters();});});
+    state.fDiffs.forEach(function(d){add('Diff: '+d,function(){togglePill('fDiffGroup',d);applyFilters();});});
+    if(state.fCourse)    add('Course: '+state.fCourse,function(){document.getElementById('fCourse').value='';applyFilters();});
+    if(state.fRole)      add('Role: '+(ROLE_LABELS[state.fRole]||state.fRole),function(){document.getElementById('fRole').value='';populateUserDropdown('');applyFilters();});
+    if(state.fUser)      add('User: '+state.fUser,function(){document.getElementById('fUser').value='';applyFilters();});
+    if(state.fSourceDoc) add('Doc: "'+state.fSourceDoc+'"',function(){document.getElementById('fSourceDoc').value='';applyFilters();});
+    if(state.fMarksMin)  add('Marks ≥ '+state.fMarksMin,function(){document.getElementById('fMarksMin').value='';applyFilters();});
+    if(state.fMarksMax)  add('Marks ≤ '+state.fMarksMax,function(){document.getElementById('fMarksMax').value='';applyFilters();});
+    if(state.fDateFrom)  add('From: '+state.fDateFrom,function(){document.getElementById('fDateFrom').value='';applyFilters();});
+    if(state.fDateTo)    add('To: '+state.fDateTo,function(){document.getElementById('fDateTo').value='';applyFilters();});
+    if(!chips.length){container.className='qbe-chips-row empty';container.innerHTML='';return;}
+    container.className='qbe-chips-row';
+    var html='';
+    chips.forEach(function(c,i){html+='<span class="qbe-chip" data-ci="'+i+'">'+esc(c.lbl)+'<button>✕</button></span>';});
+    html+='<button class="qbe-chip-clear-all" id="caBtn"><i class="fas fa-times" style="margin-right:3px;"></i>Clear All</button>';
+    container.innerHTML=html;
+    container.querySelectorAll('.qbe-chip').forEach(function(chip,i){chip.querySelector('button').addEventListener('click',function(){chips[i].fn();});});
+    var ca=document.getElementById('caBtn');if(ca)ca.addEventListener('click',resetFilters);
+}
+function togglePill(gid,val){var g=document.getElementById(gid);if(!g)return;var p=g.querySelector('[data-val="'+val+'"]');if(p)p.classList.toggle('active');}
+
+function updateBadge(){
+    var c=0;
+    if(state.fKeyword)c++;c+=state.fTypes.length;c+=state.fDiffs.length;
+    if(state.fCourse)c++;if(state.fRole)c++;if(state.fUser)c++;
+    if(state.fSourceDoc)c++;if(state.fMarksMin)c++;if(state.fMarksMax)c++;
+    if(state.fDateFrom)c++;if(state.fDateTo)c++;
+    var b=document.getElementById('filterCountBadge');
+    b.textContent=c+' filter'+(c!==1?'s':'')+' active';
+    b.style.display=c>0?'inline-block':'none';
+    var cnt=document.getElementById('filterCnt');
+    cnt.textContent=c;cnt.className='qbe-fcnt'+(c>0?' show':'');
+    document.getElementById('filterInfoText').textContent=c>0?c+' filter'+(c!==1?'s':'')+' active':'No filters active';
+}
+
+function sortQ(arr){
+    var s=document.getElementById('sortSelect').value||'newest';
+    arr.sort(function(a,b){
+        if(s==='newest')     return(b.id||0)-(a.id||0);
+        if(s==='oldest')     return(a.id||0)-(b.id||0);
+        if(s==='marks-desc') return(b.marks||1)-(a.marks||1);
+        if(s==='marks-asc')  return(a.marks||1)-(b.marks||1);
+        if(s==='type')       return(a.type||a.question_type||'').localeCompare(b.type||b.question_type||'');
+        if(s==='difficulty') {var o={easy:0,medium:1,hard:2};return(o[a.difficulty]||1)-(o[b.difficulty]||1);}
+        if(s==='bank')       return(a.bank_title||'').localeCompare(b.bank_title||'');
+        return 0;
+    });
+}
+
+function renderPage(){
+    var total=state.filtered.length,start=(state.page-1)*PAGE_SIZE,end=Math.min(start+PAGE_SIZE,total),pageData=state.filtered.slice(start,end);
+    document.getElementById('shownCount').textContent=total;
+    document.getElementById('totalCount').textContent=state.allQuestions.length;
+    var grid=document.getElementById('gridView'),list=document.getElementById('listView'),lbody=document.getElementById('listBody'),lempty=document.getElementById('listEmpty');
+    if(!total){grid.innerHTML='';lbody.innerHTML='';lempty.style.display='block';document.getElementById('paginationWrap').style.display='none';showEmpty('No questions match your filters.');return;}
+    hideEmpty();
+    if(state.viewMode==='grid'){
+        grid.innerHTML=pageData.map(function(q,i){return buildCard(q,start+i);}).join('');
+        list.style.display='none';grid.style.display='';
+    } else {
+        lbody.innerHTML=pageData.map(function(q,i){return buildListRow(q,start+i,start+i+1);}).join('');
+        lempty.style.display='none';grid.style.display='none';list.style.display='block';
+    }
+    renderPagination(total);
+}
+
+function buildCard(q,ri){
+    var qt=(q.type||q.question_type||'mcq').toLowerCase(),
+        qtext=q.question||q.question_text||'',
+        diff=(q.difficulty||'medium').toLowerCase(),
+        m=q.marks||1,
+        ae=canEdit(q);
+    var opts='';
+    if(qt==='mcq'||qt==='fitb'){
+        var oh='';
+        ['A','B','C','D'].forEach(function(l){
+            var v=q['option_'+l]||q['option'+l]||q['option_'+l.toLowerCase()]||'';
+            if(v){var ic=(q.correct_answer||q.answer||'')===l;oh+='<div class="qbe-opt-row'+(ic?' correct':'')+'"><span class="qbe-opt-lbl">'+l+'</span><span class="qbe-opt-text">'+esc(v)+'</span></div>';}
+        });
+        if(oh) opts='<div class="qbe-opts-grid">'+oh+'</div>';
+    } else if(qt==='tf'){
+        var ta=q.correct_answer||q.answer||'',tc=(ta==='True'||ta==='A'||ta==='true');
+        opts='<div class="qbe-tf-opts"><div class="qbe-tf-opt'+(tc?' correct':'')+'">True</div><div class="qbe-tf-opt'+(!tc?' correct':'')+'">False</div></div>';
+    }
+    var ah='';
+    if(qt==='sa'||qt==='desc'){var a=q.correct_answer||q.answer||'';if(a)ah='<div class="qbe-answer-box"><div class="qbe-answer-label"><i class="fas fa-check-circle" style="margin-right:3px;"></i>Answer</div><div class="qbe-answer-text">'+esc(trunc(a,150))+'</div></div>';}
+    var srcs=[];try{srcs=JSON.parse(q.source_documents||'[]');}catch(e){}
+    return '<div class="qbe-q-card type-'+qt+'">'
+        +'<div class="qbe-card-top">'
+        +'<div class="qbe-card-badges">'
+        +'<span class="qbe-badge badge-'+qt+'">'+esc(TYPE_LABELS[qt]||qt)+'</span>'
+        +'<span class="qbe-badge badge-'+diff+'">'+esc(DIFF_LABELS[diff]||diff)+'</span>'
+        +'<span class="qbe-badge badge-marks"><i class="fas fa-star" style="font-size:.55rem;margin-right:2px;color:var(--amber);"></i>'+m+' mk</span>'
+        +'</div>'
+        +'<div class="qbe-card-actions">'
+        +'<button class="qbe-action-btn view-btn" data-idx="'+ri+'" title="View"><i class="fas fa-eye"></i></button>'
+        +(ae?'<button class="qbe-action-btn edit-btn" data-idx="'+ri+'" title="Edit"><i class="fas fa-edit"></i></button>':'')
+        +(ae?'<button class="qbe-action-btn danger del-btn" data-idx="'+ri+'" title="Delete"><i class="fas fa-trash"></i></button>':'')
+        +'</div></div>'
+        +'<div class="qbe-q-text">'+hl(qtext,state.fKeyword)+'</div>'
+        +(opts||ah)
+        +'<div class="qbe-card-footer">'
+        +'<div class="qbe-meta-item"><i class="fas fa-database"></i><strong>'+esc(trunc(q.bank_title||'—',24))+'</strong></div>'
+        +'<div class="qbe-meta-item"><i class="fas fa-user"></i><span>'+esc(q.created_by||'—')+'</span></div>'
+        +(q.course?'<div class="qbe-meta-item"><i class="fas fa-graduation-cap" style="color:var(--brand);"></i><span>'+esc(trunc(q.course,18))+'</span></div>':'')
+        +(srcs.length?'<div class="qbe-meta-item"><i class="fas fa-file-pdf" style="color:var(--accent);"></i><span>'+esc(trunc(srcs[0],22))+'</span></div>':'')
+        +'</div>'
+    +'</div>';
+}
+
+function buildListRow(q,ri,rn){
+    var qt=(q.type||q.question_type||'mcq').toLowerCase(),
+        diff=(q.difficulty||'medium').toLowerCase(),
+        ae=canEdit(q),
+        ans=q.correct_answer||q.answer||'—';
+    return '<tr>'
+        +'<td style="color:var(--text-soft);font-size:.72rem;font-weight:600;">'+rn+'</td>'
+        +'<td><div class="qbe-list-q view-btn" data-idx="'+ri+'">'+esc(trunc(q.question||q.question_text||'',75))+'</div></td>'
+        +'<td><span class="qbe-badge badge-'+qt+'">'+esc(TYPE_LABELS[qt]||qt)+'</span></td>'
+        +'<td><span class="qbe-badge badge-'+diff+'">'+esc(DIFF_LABELS[diff]||diff)+'</span></td>'
+        +'<td style="font-weight:700;color:var(--brand);">'+(q.marks||1)+'</td>'
+        +'<td style="font-size:.75rem;color:#059669;font-weight:600;">'+esc(trunc(ans,40))+'</td>'
+        +'<td style="font-size:.75rem;color:var(--text-mid);">'+esc(trunc(q.bank_title||'—',26))+'</td>'
+        +'<td style="font-size:.72rem;color:var(--text-soft);">'+esc(q.created_by||'—')+'</td>'
+        +'<td style="font-size:.72rem;color:var(--text-soft);white-space:nowrap;">'+esc(q.created_at||'—')+'</td>'
+        +'<td><div style="display:flex;gap:4px;">'
+        +'<button class="qbe-action-btn view-btn" data-idx="'+ri+'" title="View"><i class="fas fa-eye"></i></button>'
+        +(ae?'<button class="qbe-action-btn edit-btn" data-idx="'+ri+'" title="Edit"><i class="fas fa-edit"></i></button>':'')
+        +(ae?'<button class="qbe-action-btn danger del-btn" data-idx="'+ri+'" title="Delete"><i class="fas fa-trash"></i></button>':'')
+        +'</div></td>'
+    +'</tr>';
+}
+
+function renderPagination(total){
+    var tp=Math.ceil(total/PAGE_SIZE),wrap=document.getElementById('paginationWrap');
+    if(tp<=1){wrap.style.display='none';return;}
+    wrap.style.display='flex';
+    document.getElementById('paginationInfo').textContent='Page '+state.page+' of '+tp+' ('+total+' questions)';
+    var btns=document.getElementById('pageButtons'),html='';
+    html+='<button class="qbe-page-btn" id="prevBtn" '+(state.page===1?'disabled':'')+'>‹</button>';
+    buildPageRange(state.page,tp).forEach(function(p){
+        html+=p==='…'?'<button class="qbe-page-btn dots">…</button>':'<button class="qbe-page-btn'+(p===state.page?' active':'')+'" data-page="'+p+'">'+p+'</button>';
+    });
+    html+='<button class="qbe-page-btn" id="nextBtn" '+(state.page===tp?'disabled':'')+'>›</button>';
+    btns.innerHTML=html;
+    btns.querySelectorAll('[data-page]').forEach(function(b){b.addEventListener('click',function(){state.page=parseInt(this.dataset.page);renderPage();window.scrollTo({top:0,behavior:'smooth'});});});
+    var prev=document.getElementById('prevBtn'),next=document.getElementById('nextBtn');
+    if(prev)prev.addEventListener('click',function(){state.page--;renderPage();window.scrollTo({top:0,behavior:'smooth'});});
+    if(next)next.addEventListener('click',function(){state.page++;renderPage();window.scrollTo({top:0,behavior:'smooth'});});
+}
+function buildPageRange(c,t){
+    if(t<=7)return Array.from({length:t},function(_,i){return i+1;});
+    var a=[1];if(c>3)a.push('…');
+    for(var i=Math.max(2,c-1);i<=Math.min(t-1,c+1);i++)a.push(i);
+    if(c<t-2)a.push('…');a.push(t);return a;
+}
+
+function openViewModal(idx){
+    var q=state.filtered[idx];if(!q)return;
+    var qt=(q.type||q.question_type||'mcq').toLowerCase(),
+        qtext=q.question||q.question_text||'',
+        ans=q.correct_answer||q.answer||'—';
+    var srcs=[];try{srcs=JSON.parse(q.source_documents||'[]');}catch(e){}
+    document.getElementById('vmTitle').textContent=TYPE_LABELS[qt]||qt;
+    var b='';
+    b+='<div class="qbe-view-sec"><label>Question</label><div class="qbe-view-val">'+esc(qtext)+'</div></div>';
+    if(qt==='mcq'||qt==='fitb'){
+        b+='<div class="qbe-view-sec"><label>Options</label><div class="qbe-view-opts">';
+        ['A','B','C','D'].forEach(function(l){var v=q['option_'+l]||q['option'+l]||q['option_'+l.toLowerCase()]||'';if(v){var ic=ans===l;b+='<div class="qbe-view-opt'+(ic?' correct':'')+'"><span class="qbe-view-opt-lbl">'+l+'</span><span class="qbe-view-opt-text">'+esc(v)+'</span></div>';}});
+        b+='</div></div>';
+    } else if(qt==='tf'){
+        var tc=(ans==='True'||ans==='A'||ans==='true');
+        b+='<div class="qbe-view-sec"><label>Options</label><div class="qbe-view-opts"><div class="qbe-view-opt'+(tc?' correct':'')+'"><span class="qbe-view-opt-lbl">A</span><span class="qbe-view-opt-text">True</span></div><div class="qbe-view-opt'+(!tc?' correct':'')+'"><span class="qbe-view-opt-lbl">B</span><span class="qbe-view-opt-text">False</span></div></div></div>';
+    }
+    b+='<div class="qbe-view-sec"><label><i class="fas fa-check-circle" style="margin-right:3px;color:var(--green);"></i>Correct Answer</label><div class="qbe-view-answer">'+esc(ans)+'</div></div>';
+    b+='<div class="qbe-modal-divider"></div>';
+    b+='<div class="qbe-view-grid3"><div class="qbe-view-sec"><label>Type</label><div><span class="qbe-badge badge-'+qt+'">'+esc(TYPE_LABELS[qt]||qt)+'</span></div></div><div class="qbe-view-sec"><label>Difficulty</label><div><span class="qbe-badge badge-'+(q.difficulty||'medium')+'">'+esc(DIFF_LABELS[q.difficulty||'medium'])+'</span></div></div><div class="qbe-view-sec"><label>Marks</label><div style="font-family:\'Fraunces\',serif;font-size:1.3rem;font-weight:900;color:var(--brand);">'+(q.marks||1)+'</div></div></div>';
+    b+='<div class="qbe-view-sec"><label><i class="fas fa-database" style="margin-right:3px;color:var(--brand);"></i>Bank</label><div class="qbe-view-val">'+esc(q.bank_title||'—')+'</div></div>';
+    if(q.course) b+='<div class="qbe-view-sec"><label><i class="fas fa-graduation-cap" style="margin-right:3px;color:var(--brand);"></i>Course</label><div class="qbe-view-val">'+esc(q.course)+'</div></div>';
+    b+='<div class="qbe-view-sec"><label><i class="fas fa-user" style="margin-right:3px;"></i>Created By</label><div class="qbe-view-val">'+esc(q.created_by||'—')+'</div></div>';
+    if(srcs.length) b+='<div class="qbe-view-sec"><label><i class="fas fa-file-pdf" style="margin-right:3px;color:var(--accent);"></i>Source Documents</label><div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:2px;">'+srcs.map(function(s){return'<span class="qbe-badge" style="background:#f1f5f9;color:var(--text-mid);border:1px solid var(--border);">'+esc(s)+'</span>';}).join('')+'</div></div>';
+    if(q.bank_kw) b+='<div class="qbe-view-sec"><label><i class="fas fa-tag" style="margin-right:3px;color:var(--accent);"></i>Generation Keyword</label><div class="qbe-view-val">'+esc(q.bank_kw)+'</div></div>';
+    document.getElementById('vmBody').innerHTML=b;
+    document.getElementById('viewModal').classList.add('show');
+}
+
+function openEditModal(idx){
+    var q=state.filtered[idx];if(!q)return;
+    if(!canEdit(q)){toast('You can only edit questions from your own banks.','error');return;}
+    var qt=(q.type||q.question_type||'mcq').toLowerCase();
+    state.editTargetIdx=idx;
+    document.getElementById('emQIdx').value=idx;
+    document.getElementById('emQId').value=q.id||'';
+    document.getElementById('emQType').value=qt;
+    document.getElementById('emQText').value=q.question||q.question_text||'';
+    document.getElementById('emOptA').value=q.option_A||q.optionA||q.option_a||'';
+    document.getElementById('emOptB').value=q.option_B||q.optionB||q.option_b||'';
+    document.getElementById('emOptC').value=q.option_C||q.optionC||q.option_c||'';
+    document.getElementById('emOptD').value=q.option_D||q.optionD||q.option_d||'';
+    document.getElementById('emMarks').value=q.marks||1;
+    document.getElementById('emDifficulty').value=q.difficulty||'medium';
+    var ans=q.correct_answer||q.answer||'',isLong=(qt==='sa'||qt==='desc');
+    document.getElementById('emAnswerInput').style.display=isLong?'none':'block';
+    document.getElementById('emAnswerTextarea').style.display=isLong?'block':'none';
+    if(isLong) document.getElementById('emAnswerTextarea').value=ans;
+    else       document.getElementById('emAnswerInput').value=ans;
+    document.getElementById('emOptionsWrap').style.display=(qt==='mcq'||qt==='fitb')?'block':'none';
+    document.getElementById('emValMsg').className='qbe-val-msg';
+    document.getElementById('editModal').classList.add('show');
+    setTimeout(function(){document.getElementById('emQText').focus();},80);
+}
+
+function saveEdit(){
+    var idx=parseInt(document.getElementById('emQIdx').value),
+        qid=document.getElementById('emQId').value,
+        qt=document.getElementById('emQType').value,
+        q=state.filtered[idx];
+    if(!q){document.getElementById('editModal').classList.remove('show');return;}
+    var newText=document.getElementById('emQText').value.trim();
+    if(!newText){
+        document.getElementById('emQText').style.borderColor='var(--accent)';
+        document.getElementById('emValMsg').innerHTML='<i class="fas fa-exclamation-circle"></i><span> Question text is required.</span>';
+        document.getElementById('emValMsg').className='qbe-val-msg error';return;
+    }
+    document.getElementById('emQText').style.borderColor='';
+    document.getElementById('emValMsg').className='qbe-val-msg';
+    var isLong=(qt==='sa'||qt==='desc'),
+        ans=isLong?document.getElementById('emAnswerTextarea').value.trim():document.getElementById('emAnswerInput').value.trim();
+    var payload={question_id:qid,question_text:newText,
+        option_a:document.getElementById('emOptA').value.trim()||null,
+        option_b:document.getElementById('emOptB').value.trim()||null,
+        option_c:document.getElementById('emOptC').value.trim()||null,
+        option_d:document.getElementById('emOptD').value.trim()||null,
+        correct_answer:ans,
+        marks:Math.max(1,parseInt(document.getElementById('emMarks').value)||1),
+        difficulty:document.getElementById('emDifficulty').value};
+    var btn=document.getElementById('emSave');
+    btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Saving…';
+    postJSON(URLS.updateQ,payload).then(function(result){
+        btn.disabled=false;btn.innerHTML='<i class="fas fa-save"></i> Save Changes';
+        if(result.status==='success'){
+            q.question=newText;q.question_text=newText;
+            q.option_A=payload.option_a;q.option_B=payload.option_b;
+            q.option_C=payload.option_c;q.option_D=payload.option_d;
+            q.correct_answer=ans;q.marks=payload.marks;q.difficulty=payload.difficulty;
+            var m=state.allQuestions.find(function(x){return String(x.id)===String(qid);});
+            if(m){m.question=newText;m.question_text=newText;m.option_A=payload.option_a;m.option_B=payload.option_b;m.option_C=payload.option_c;m.option_D=payload.option_d;m.correct_answer=ans;m.marks=payload.marks;m.difficulty=payload.difficulty;}
+            document.getElementById('editModal').classList.remove('show');
+            renderPage();toast('Question updated!','success');
+        } else {toast(result.message||'Update failed.','error');}
+    }).catch(function(){btn.disabled=false;btn.innerHTML='<i class="fas fa-save"></i> Save Changes';toast('Network error.','error');});
+}
+
+function confirmDelete(idx){
+    var q=state.filtered[idx];if(!q)return;
+    if(!canEdit(q)){toast('You can only delete questions from your own banks.','error');return;}
+    state.deleteTargetQ={q:q,idx:idx};
+    document.getElementById('confirmMsg').textContent='Permanently remove: "'+trunc(q.question||q.question_text||'',60)+'"';
+    document.getElementById('confirmModal').classList.add('show');
+}
+function executeDelete(){
+    var tgt=state.deleteTargetQ;if(!tgt)return;
+    var btn=document.getElementById('confirmDelete');
+    btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Deleting…';
+    postJSON(URLS.deleteQ,{question_id:tgt.q.id}).then(function(result){
+        btn.disabled=false;btn.innerHTML='<i class="fas fa-trash"></i> Delete';
+        document.getElementById('confirmModal').classList.remove('show');
+        if(result.status==='success'){
+            state.allQuestions=state.allQuestions.filter(function(x){return String(x.id)!==String(tgt.q.id);});
+            document.getElementById('totalQsCount').textContent=state.allQuestions.length;
+            applyFilters();toast('Question deleted.','success');
+        } else {toast(result.message||'Delete failed.','error');}
+    }).catch(function(){
+        btn.disabled=false;btn.innerHTML='<i class="fas fa-trash"></i> Delete';
+        document.getElementById('confirmModal').classList.remove('show');
+        toast('Network error.','error');
+    });
+}
+
+function showLoading(){document.getElementById('loadingState').classList.add('show');document.getElementById('emptyState').classList.remove('show');document.getElementById('gridView').style.display='none';document.getElementById('listView').style.display='none';document.getElementById('paginationWrap').style.display='none';}
+function hideLoading(){document.getElementById('loadingState').classList.remove('show');document.getElementById('gridView').style.display='';}
+function showEmpty(msg){document.getElementById('emptyMsg').textContent=msg||'No results.';document.getElementById('emptyState').classList.add('show');document.getElementById('gridView').style.display='none';document.getElementById('listView').style.display='none';document.getElementById('paginationWrap').style.display='none';}
+function hideEmpty(){document.getElementById('emptyState').classList.remove('show');}
+
+// ── Events ─────────────────────────────────────────────────────────────
+document.getElementById('btnApply').addEventListener('click',applyFilters);
+document.getElementById('btnReset').addEventListener('click',resetFilters);
+document.getElementById('sortSelect').addEventListener('change',function(){sortQ(state.filtered);state.page=1;renderPage();});
+document.getElementById('fKeyword').addEventListener('keydown',function(e){if(e.key==='Enter')applyFilters();});
+document.querySelectorAll('.qbe-pill-opt').forEach(function(p){p.addEventListener('click',function(){this.classList.toggle('active');});});
+
+// Role → cascade user dropdown (works for ALL users)
+// ══════════════════════════════════════════════════════════
+// QBE SMART ROLE / USER DROPDOWNS  (mirrors dashboard logic)
+// ══════════════════════════════════════════════════════════
+if(IS_ELEVATED){
+
+    (function(){
+        var qbeCurrentSearchMode = 'full_name';
+        var qbeAllUsersData      = [];
+    var qbeSelectedRoleName  = '';   // raw name e.g. "instructor" — fed into fRole
+    var qbeSelectedUserVal   = '';   // full_name string — fed into fUser
+
+    function escHtml(str){
+        return String(str)
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── Generic dropdown toggle ───────────────────────────
+    window.qbeToggleDropdown = function(wrapId){
+        var wrap = document.getElementById(wrapId);
+        if(wrap.classList.contains('disabled')) return;
+        var isOpen = wrap.classList.contains('open');
+        document.querySelectorAll('.qbe-custom-select-wrap.open').forEach(function(w){
+            w.classList.remove('open');
+        });
+        if(!isOpen){
+            wrap.classList.add('open');
+            var inp = wrap.querySelector('.qbe-custom-select-search input');
+            if(inp) setTimeout(function(){ inp.focus(); }, 50);
+        }
+    };
+
+    // ── Generic option filter (role dropdown) ────────────
+    window.qbeFilterOptions = function(wrapId, query){
+        var wrap    = document.getElementById(wrapId);
+        var options = wrap.querySelectorAll('.qbe-custom-option');
+        var noRes   = wrap.querySelector('.qbe-no-results-msg');
+        var q       = query.toLowerCase().trim();
+        var any     = false;
+        options.forEach(function(opt){
+            var label = (opt.dataset.label || opt.textContent).toLowerCase();
+            var show  = !q || label.includes(q);
+            opt.classList.toggle('hidden', !show);
+            if(show) any = true;
+        });
+        if(noRes) noRes.style.display = any ? 'none' : 'block';
+    };
+
+    // ── User option filter (respects active mode) ─────────
+    window.qbeFilterUserOptions = function(query){
+        var wrap    = document.getElementById('qbeUserSelectWrap');
+        var options = wrap.querySelectorAll('.qbe-custom-option');
+        var noRes   = wrap.querySelector('.qbe-no-results-msg');
+        var q       = query.toLowerCase().trim();
+        var any     = false;
+        options.forEach(function(opt){
+            var searchTarget = opt.dataset.search !== undefined
+                ? opt.dataset.search
+                : (opt.dataset.label || '').toLowerCase();
+            var show = !q || searchTarget.includes(q) || (opt.dataset.label||'').toLowerCase().includes(q);
+            opt.classList.toggle('hidden', !show);
+            if(show) any = true;
+        });
+        if(noRes) noRes.style.display = any ? 'none' : 'block';
+    };
+
+    // ── Close on outside click / Escape ──────────────────
+    document.addEventListener('click', function(e){
+        if(!e.target.closest('.qbe-custom-select-wrap')){
+            document.querySelectorAll('.qbe-custom-select-wrap.open').forEach(function(w){
+                w.classList.remove('open');
+            });
+        }
+    });
+    document.addEventListener('keydown', function(e){
+        if(e.key === 'Escape'){
+            document.querySelectorAll('.qbe-custom-select-wrap.open').forEach(function(w){
+                w.classList.remove('open');
+            });
+        }
+    });
+
+    // ── Mode pills ────────────────────────────────────────
+    document.querySelectorAll('.mode-pill').forEach(function(pill){
+        pill.addEventListener('click', function(){
+            document.querySelectorAll('.mode-pill').forEach(function(p){ p.classList.remove('active'); });
+            this.classList.add('active');
+            qbeCurrentSearchMode = this.dataset.mode;
+            var placeholders = {
+                'full_name':      'Search by full name…',
+                'username':       'Search by username…',
+                'service_number': 'Search by IC number…',
+            };
+            var inp = document.getElementById('qbeUserSearchInput');
+            if(inp){ inp.placeholder = placeholders[qbeCurrentSearchMode] || 'Search…'; inp.value = ''; }
+            qbeRenderUsersWithMode(qbeAllUsersData, qbeCurrentSearchMode);
+        });
+    });
+
+    // ── Render role options ───────────────────────────────
+    function qbeRenderRoles(roles){
+        var list = document.getElementById('qbeRoleOptionsList');
+        list.innerHTML = '';
+
+        var allOpt = document.createElement('div');
+        allOpt.className = 'qbe-custom-option selected';
+        allOpt.dataset.value = '';
+        allOpt.dataset.label = 'All Roles';
+        allOpt.innerHTML = '<span class="opt-icon">🎭</span><span>All Roles</span>';
+        allOpt.addEventListener('click', function(){ qbeSelectRole('', '🎭 All Roles'); });
+        list.appendChild(allOpt);
+
+        var noRes = document.createElement('div');
+        noRes.className = 'qbe-no-results-msg';
+        noRes.textContent = 'No results found';
+
+        roles.forEach(function(role){
+            var item = document.createElement('div');
+            item.className = 'qbe-custom-option';
+            item.dataset.value = role.name;   // use name (e.g. "instructor") not id
+            item.dataset.label = role.display;
+
+            var icon = '👤';
+            if(role.name==='superadmin') icon='🛡️';
+            else if(role.name==='admin') icon='⚙️';
+            else if(role.name==='instructor') icon='🎓';
+            else if(role.name==='student') icon='📚';
+
+            item.innerHTML = '<span class="opt-icon">'+icon+'</span><span>'+escHtml(role.display)+'</span>';
+            item.addEventListener('click', function(){ qbeSelectRole(role.name, icon+' '+role.display); });
+            list.appendChild(item);
+        });
+
+        list.appendChild(noRes);
+    }
+
+    // ── Render user options with current mode ─────────────
+    function qbeRenderUsersWithMode(users, mode){
+        var userList = document.getElementById('qbeUserOptionsList');
+        var roleDisplay = userList.dataset.roleDisplay || 'Users';
+        userList.innerHTML = '';
+
+        // "All Users" option
+        var allOpt = document.createElement('div');
+        allOpt.className = 'qbe-custom-option' + (!qbeSelectedUserVal ? ' selected' : '');
+        allOpt.dataset.value  = '';
+        allOpt.dataset.label  = '👥 All ' + roleDisplay;
+        allOpt.dataset.search = '';
+        allOpt.innerHTML =
+            '<span class="opt-icon">👥</span>' +
+            '<div class="opt-body"><span class="opt-main">All ' + escHtml(roleDisplay) + '</span></div>';
+        allOpt.addEventListener('click', function(){ qbeSelectUser('', '👥 All ' + roleDisplay); });
+        userList.appendChild(allOpt);
+
+        var noRes = document.createElement('div');
+        noRes.className = 'qbe-no-results-msg';
+        noRes.textContent = 'No results found';
+
+        if(!users.length){ noRes.style.display = 'block'; userList.appendChild(noRes); return; }
+
+        users.forEach(function(u){
+            var item = document.createElement('div');
+            item.className = 'qbe-custom-option' +
+                (qbeSelectedUserVal === (u.full_name || u.username) ? ' selected' : '');
+
+            // dataset.value is always full_name — matched against created_by in applyFilters
+            item.dataset.value = u.full_name || u.username;
+
+            var mt, st, sv, tl;
+            if(mode === 'username'){
+                mt = u.username;
+                st = u.full_name;
+                sv = u.username.toLowerCase();
+                tl = u.username;
+            } else if(mode === 'service_number'){
+                mt = u.service_number || '—';
+                st = u.full_name;
+                sv = (u.service_number || '').toLowerCase();
+                tl = u.service_number || u.full_name;
+            } else {
+                // full_name mode — mirrors session analytics exactly
+                mt = u.full_name;   // ← plain u.full_name, NOT u.full_name || u.username
+                st = u.username;
+                sv = (u.full_name || '').toLowerCase();
+                tl = u.full_name;
+            }
+
+            item.dataset.label  = tl;
+            item.dataset.search = sv;
+
+            item.innerHTML =
+                '<span class="opt-icon"><i class="fas fa-user" style="font-size:0.7rem"></i></span>' +
+                '<div class="opt-body">' +
+                    '<span class="opt-main">' + escHtml(mt) + '</span>' +
+                    '<span class="opt-sub">'  + escHtml(st) + '</span>' +
+                '</div>' +
+                (u.service_number && mode !== 'service_number'
+                    ? '<span class="item-sn">' + escHtml(u.service_number) + '</span>'
+                    : '');
+
+            item.addEventListener('click', function(){
+                qbeSelectUser(u.full_name || u.username, tl);
+            });
+            userList.appendChild(item);
+        });
+
+        userList.appendChild(noRes);
+    }
+
+    // ── Role selected ─────────────────────────────────────
+    function qbeSelectRole(roleName, label){
+        qbeSelectedRoleName = roleName;
+        document.getElementById('fRole').value = roleName;          // feed hidden input
+        document.getElementById('qbeRoleTriggerText').textContent = label || '🎭 All Roles';
+        document.querySelectorAll('#qbeRoleOptionsList .qbe-custom-option').forEach(function(el){
+            el.classList.toggle('selected', el.dataset.value === roleName);
+        });
+        document.getElementById('qbeRoleSelectWrap').classList.remove('open');
+
+        // Reset user
+        qbeSelectedUserVal = '';
+        document.getElementById('fUser').value = '';
+        document.getElementById('qbeUserTriggerText').textContent = '👥 All Users';
+
+        if(roleName){
+            qbeLoadUsersByRole(roleName);
+        } else {
+            // No role selected — disable user dropdown, reload all users for populateUserDropdown compat
+             qbeLoadUsersByRole(''); 
+        }
+    }
+
+    // ── User selected ─────────────────────────────────────
+    function qbeSelectUser(userVal, label){
+        qbeSelectedUserVal = userVal;
+        document.getElementById('fUser').value = userVal;           // feed hidden input
+        document.getElementById('qbeUserTriggerText').textContent = label || '👥 All Users';
+        document.querySelectorAll('#qbeUserOptionsList .qbe-custom-option').forEach(function(el){
+            el.classList.toggle('selected', el.dataset.value === userVal);
+        });
+        document.getElementById('qbeUserSelectWrap').classList.remove('open');
+    }
+
+    // ── Enable/disable user dropdown ─────────────────────
+    function qbeEnableUserDropdown(enable){
+        var wrap = document.getElementById('qbeUserSelectWrap');
+        wrap.classList.toggle('disabled', !enable);
+        if(!enable) wrap.classList.remove('open');
+    }
+
+    // ── Load users for a role via existing API ────────────
+    function qbeLoadUsersByRole(roleName){
+        qbeEnableUserDropdown(false);
+        document.getElementById('qbeUserTriggerText').textContent = 'Loading…';
+        document.getElementById('qbeUserOptionsList').innerHTML =
+            '<div class="qbe-no-results-msg" style="display:block;">Loading…</div>';
+
+        var url = roleName ? (function(){
+            var rolesCache = document.getElementById('qbeRoleSelectWrap')._rolesCache || [];
+            var found = rolesCache.find(function(r){ return r.name === roleName; });
+            return found ? QBE_API_USERS_ROLE_URL + '?role_id=' + found.id : null;
+        })() : QBE_API_USERS_ROLE_URL;   // ← no param = all users
+
+        if(!url){
+            qbeEnableUserDropdown(false);
+            document.getElementById('qbeUserTriggerText').textContent = '👥 All Users';
+            return;
+        }
+
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+            if(!data.success){
+                qbeAllUsersData = [];
+                document.getElementById('qbeUserTriggerText').textContent = '👥 All Users';
+                document.getElementById('qbeUserOptionsList').innerHTML =
+                    '<div class="qbe-no-results-msg" style="display:block;">No users found</div>';
+                qbeEnableUserDropdown(false);
+                return;
+            }
+            qbeAllUsersData = data.users;
+            QBE_ROLE_USERS = data.users;
+            var userList = document.getElementById('qbeUserOptionsList');
+            userList.dataset.roleDisplay = roleName ? (data.role_display + 's') : 'Users';
+
+            qbeCurrentSearchMode = 'full_name';
+            document.querySelectorAll('.mode-pill').forEach(function(p){ p.classList.remove('active'); });
+            var defPill = document.querySelector('.mode-pill[data-mode="full_name"]');
+            if(defPill) defPill.classList.add('active');
+            var inp = document.getElementById('qbeUserSearchInput');
+            if(inp){ inp.value=''; inp.placeholder='Search by full name…'; }
+
+            qbeRenderUsersWithMode(qbeAllUsersData, qbeCurrentSearchMode);
+            qbeEnableUserDropdown(true);
+
+            // ← trigger text depends on whether a role was selected
+            document.getElementById('qbeUserTriggerText').textContent = roleName
+                ? '👥 All ' + data.role_display + 's'
+                : '👥 All Users';
+        })
+        .catch(function(){
+            qbeEnableUserDropdown(true);
+            document.getElementById('qbeUserTriggerText').textContent = '⚠ Error';
+            document.getElementById('qbeUserOptionsList').innerHTML =
+                '<div class="qbe-no-results-msg" style="display:block;">Error loading users</div>';
+        });
+    }
+
+    // ── Load roles on init ────────────────────────────────
+    function qbeLoadRoles(){
+        fetch(QBE_API_ROLES_URL, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+            if(!data.success) return;
+            // Cache on element for later role_id lookup
+            document.getElementById('qbeRoleSelectWrap')._rolesCache = data.roles;
+            qbeRenderRoles(data.roles);
+            qbeLoadUsersByRole('');  
+        })
+        .catch(function(){});
+    }
+
+    // ── Patch resetFilters to also reset the custom dropdowns ──
+    var _origReset = window.resetFilters;
+    window.resetFilters = function(){
+        // Reset hidden inputs (done by original reset already, but be explicit)
+        document.getElementById('fRole').value = '';
+        document.getElementById('fUser').value = '';
+        // Reset visual state
+        qbeSelectedRoleName = '';
+        qbeSelectedUserVal  = '';
+        document.getElementById('qbeRoleTriggerText').textContent = '🎭 All Roles';
+        document.getElementById('qbeUserTriggerText').textContent = '👥 All Users';
+        document.querySelectorAll('#qbeRoleOptionsList .qbe-custom-option').forEach(function(el){
+            el.classList.toggle('selected', el.dataset.value === '');
+        });
+        qbeEnableUserDropdown(false);
+        document.getElementById('qbeUserOptionsList').innerHTML =
+            '<div class="qbe-no-results-msg" style="display:block;">Select a role first</div>';
+        // Call original
+        if(_origReset) _origReset();
+    };
+
+    // ── Init ──────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function(){
+        qbeLoadRoles();
+    });
+    
+})();
+}
+
+document.getElementById('viewGrid').addEventListener('click',function(){state.viewMode='grid';state.page=1;this.classList.add('active');document.getElementById('viewList').classList.remove('active');renderPage();});
+document.getElementById('viewList').addEventListener('click',function(){state.viewMode='list';state.page=1;this.classList.add('active');document.getElementById('viewGrid').classList.remove('active');renderPage();});
+
+function dc(e){
+    var vb=e.target.closest('.view-btn');if(vb){var i=parseInt(vb.dataset.idx);if(!isNaN(i)){openViewModal(i);return;}}
+    var eb=e.target.closest('.edit-btn');if(eb){var i=parseInt(eb.dataset.idx);if(!isNaN(i)){openEditModal(i);return;}}
+    var db=e.target.closest('.del-btn'); if(db){var i=parseInt(db.dataset.idx);if(!isNaN(i)){confirmDelete(i);return;}}
+}
+
+
+
+
+['viewModal','editModal','confirmModal'].forEach(function(id){
+    document.getElementById(id).addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
+});
+document.addEventListener('keydown',function(e){
+    if(e.key==='Escape') document.querySelectorAll('.qbe-modal-overlay.show').forEach(function(m){m.classList.remove('show');});
+});
+
+window.addEventListener('DOMContentLoaded',function(){
+    (function(){
+        var params   = new URLSearchParams(window.location.search);
+        var raw      = params.get('doc_filter');
+        if(!raw) return;
+        var firstDoc = decodeURIComponent(raw.split(',')[0]).trim();
+        if(!firstDoc) return;
+        var inp = document.getElementById('fSourceDoc');
+        if(inp) inp.value = firstDoc;
+        window.history.replaceState({}, '', window.location.pathname);
+    })();
+    loadAllData();
+document.getElementById('gridView').addEventListener('click',dc);
+document.getElementById('listBody').addEventListener('click',dc);
+    let theadel = document.querySelector('.qbe-list-table thead');
+    if(theadel){
+        theadel.addEventListener('click',function(e){
+    var th=e.target.closest('th.sortable');if(!th)return;
+    var m={question:'newest',type:'type',difficulty:'difficulty',marks:'marks-desc',bank:'bank',created_by:'newest',date:'newest'};
+    var cur=document.getElementById('sortSelect').value,target=m[th.dataset.col]||'newest';
+    if(th.dataset.col==='marks') target=(cur==='marks-desc'?'marks-asc':'marks-desc');
+    document.getElementById('sortSelect').value=target;sortQ(state.filtered);state.page=1;renderPage();
+});
+
+    }
+document.getElementById('vmClose').addEventListener('click',function(){document.getElementById('viewModal').classList.remove('show');});
+document.getElementById('emClose').addEventListener('click',function(){document.getElementById('editModal').classList.remove('show');});
+document.getElementById('emCancel').addEventListener('click',function(){document.getElementById('editModal').classList.remove('show');});
+document.getElementById('emSave').addEventListener('click',saveEdit);
+document.getElementById('confirmCancel').addEventListener('click',function(){document.getElementById('confirmModal').classList.remove('show');});
+document.getElementById('confirmDelete').addEventListener('click',executeDelete);
+});
+</script>
+{% endblock %}
