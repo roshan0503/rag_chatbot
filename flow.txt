@@ -1,0 +1,97 @@
+START
+│
+├── INPUT FLOOR PLAN (PDF / IMAGE)
+│
+├── IF input == PDF
+│      └── Convert PDF → Image
+│
+├── Preprocess Image
+│      ├── Convert to Grayscale
+│      ├── Thresholding
+│      ├── Noise Removal
+│      └── Binary Image Generate
+│
+├── Detect Office Room
+│      ├── Apply Object Detection / OCR / Manual Selection
+│      └── Get Bounding Box (x, y, w, h)
+│
+├── Find Center Points of Bounding Box
+│      ├── Top Center
+│      ├── Bottom Center
+│      ├── Left Center
+│      └── Right Center
+│
+├── FOR each center point
+│      │
+│      ├── Move outward using 5-pixel jumps
+│      │
+│      ├── IF current pixel == WHITE
+│      │      └── Continue jumping
+│      │
+│      ├── ELIF current pixel == BLACK
+│      │      └── Wall detected
+│      │
+│      └── Save wall start point
+│
+├── AFTER wall detected
+│      │
+│      ├── Check Vertical Length
+│      │      │
+│      │      ├── Move UP by 5 pixels
+│      │      ├── IF black pixel exists
+│      │      │      └── Continue
+│      │      ├── ELSE
+│      │      │      └── Upper edge found
+│      │
+│      │
+│      ├── Move DOWN by 5 pixels
+│      │      ├── IF black pixel exists
+│      │      │      └── Continue
+│      │      ├── ELSE
+│      │      │      └── Lower edge found
+│      │
+│      └── Calculate total vertical wall length
+│
+├── AFTER vertical line completed
+│      │
+│      ├── Move SIDEWAYS (Left / Right)
+│      │
+│      ├── IF black pixel exists
+│      │      └── Continue tracing
+│      │
+│      ├── ELIF white pixel found
+│      │      └── Possible corner/end
+│      │
+│      └── Save corner point
+│
+├── Repeat Boundary Traversal
+│      │
+│      ├── Detect next connected wall
+│      ├── Trace line
+│      ├── Detect corner
+│      ├── Change direction
+│      └── Continue until:
+│
+├── IF current point == starting point
+│      └── Boundary Closed
+│
+├── Generate Polygon Points
+│
+├── Draw Polygon on Original Image
+│
+├── Label Room Type
+│      ├── OCR Text Detection
+│      ├── IF text contains "OFFICE"
+│      │      └── Label = Office
+│      ├── ELIF text contains "MEETING"
+│      │      └── Label = Meeting Room
+│      ├── ELIF text contains "CABIN"
+│      │      └── Label = Cabin
+│      └── ELSE
+│             └── Unknown Room
+│
+├── Save Polygon Coordinates
+│
+├── Export JSON
+│
+└── END
